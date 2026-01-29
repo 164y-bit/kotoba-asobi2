@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { background: #f0f0f0; display: flex; flex-direction: column; align-items: center; padding: 20px; font-family: sans-serif; }
-        /* 勉強用：画面上部の説明エリア */
         .debug-info { background: #333; color: #fff; padding: 10px; border-radius: 5px; width: 90%; margin-bottom: 20px; font-size: 0.9rem; }
-        
         #stage { width: 300px; height: 300px; border: 2px dashed #ccc; position: relative; margin-bottom: 80px; background: white; }
         .card {
             width: 70px; height: 100px; background: white; border: 2px solid #333; border-radius: 8px;
@@ -18,36 +16,29 @@
         .active { bottom: 100px; transform: scale(1.2); }
         .controls { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
         .btn-plus-minus { width: 60px; height: 60px; font-size: 2rem; cursor: pointer; margin: 0 10px; border-radius: 50%; border: 1px solid #ccc; background: #eee; }
-        .current-val { font-size: 1.5rem; font-weight: bold; min-width: 80px; display: inline-block; }
-        #test-btn { margin-top: 20px; padding: 15px 30px; font-size: 1.2rem; background: #FF69B4; color: white; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; }
+        #test-btn { margin-top: 20px; padding: 15px 30px; font-size: 1.2rem; background: #FF69B4; color: white; border: none; border-radius: 50px; cursor: pointer; }
     </style>
 </head>
 <body>
-
     <div class="debug-info">
         <p><strong>ファイル名:</strong> test2-1.html</p>
-        <p><strong>目的:</strong> 速度の微調整実験（＋ーボタン）</p>
+        <p><strong>目的:</strong> 速度の微調整（修正版）</p>
     </div>
-
     <div id="stage"><div id="card" class="card">あ</div></div>
-
     <div class="controls">
-        <div>速度（秒）を変えてみてね</div>
-        <button class="btn-plus-minus" onclick="changeSpeed(-0.1)">ー</button>
-        <span id="speed-display" class="current-val">0.6</span>
+        <div>速度（秒）</div>
+        <button class="btn-plus-minus" onclick="changeSpeed(-0.1)">－</button>
+        <span id="speed-display" style="font-size:1.5rem; font-weight:bold;">0.6</span>
         <button class="btn-plus-minus" onclick="changeSpeed(0.1)">＋</button>
         <br>
         <button id="test-btn" onclick="toggleMove()">動きをチェック！</button>
     </div>
-
     <script>
         let currentSpeed = 0.6;
         function changeSpeed(delta) {
-            // 最低0.1秒〜最大2.0秒の範囲で調整
             currentSpeed = Math.max(0.1, Math.min(2.0, currentSpeed + delta));
             document.getElementById('speed-display').innerText = currentSpeed.toFixed(1);
         }
-
         function toggleMove() {
             const card = document.getElementById('card');
             card.style.transitionDuration = currentSpeed + 's';
