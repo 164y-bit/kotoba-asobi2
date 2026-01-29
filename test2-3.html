@@ -3,70 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>test2-3：自前音源テスト Ver1.01</title>
+    <title>test2-3：再生時間制御 Ver1.04</title>
     <style>
-        /* 見た目を「ブルー系」に一新して、更新を確認しやすくしました */
         body { background: #eef7ff; display: flex; flex-direction: column; align-items: center; padding: 20px; font-family: sans-serif; }
+        .debug-info { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 8px; width: 90%; margin-bottom: 20px; font-size: 0.85rem; }
+        .status-box { background: white; padding: 10px; border-radius: 8px; margin-top: 10px; color: #333; border-left: 5px solid #3498db; }
         
-        .debug-info { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 8px; width: 90%; margin-bottom: 20px; position: relative; }
-        .ver-tag { position: absolute; top: 10px; right: 10px; background: #e74c3c; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; }
-        
-        #stage { width: 300px; height: 200px; border: 3px solid #3498db; position: relative; margin-bottom: 30px; background: white; border-radius: 15px; }
-        .card { 
-            width: 70px; height: 100px; background: white; border: 2px solid #2980b9; border-radius: 8px; 
-            position: absolute; bottom: -110px; left: 115px; transition: all 0.4s ease-out; 
-            display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #2980b9;
-        }
-        .active { bottom: 50px; transform: scale(1.1) rotate(5deg); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        #stage { width: 300px; height: 150px; border: 3px solid #3498db; position: relative; margin-bottom: 20px; background: white; border-radius: 15px; display: flex; justify-content: center; align-items: center; }
+        .card { width: 60px; height: 90px; background: white; border: 2px solid #2980b9; border-radius: 8px; transition: all 0.3s ease-out; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        .active { transform: scale(1.2) translateY(-20px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
 
         .controls { background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; text-align: center; }
-        #play-btn { padding: 15px; font-size: 1.2rem; background: #3498db; color: white; border: none; border-radius: 50px; cursor: pointer; width: 100%; font-weight: bold; }
-        #setup-btn { background: #e67e22; color: white; padding: 15px; border: none; border-radius: 10px; margin-bottom: 20px; cursor: pointer; width: 100%; font-weight: bold; }
+        .btn-plus-minus { width: 50px; height: 50px; font-size: 1.5rem; cursor: pointer; border-radius: 50%; border: 1px solid #ccc; margin: 0 10px; vertical-align: middle; }
+        #play-btn { margin-top: 20px; padding: 15px; font-size: 1.2rem; background: #3498db; color: white; border: none; border-radius: 50px; cursor: pointer; width: 100%; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="debug-info">
-        <div class="ver-tag">Ver 1.01</div>
-        <p id="display-filename"><strong>ファイル名:</strong> test2-3.html</p>
-        <p id="display-purpose"><strong>目的:</strong> 自前サーバー内の sounds/card.mp3 を鳴らす。</p>
+        <p><strong>ファイル名:</strong> test2-3.html</p>
+        <p><strong>目的:</strong> 再生カット時間のデジタル調整実験</p>
+        <div class="status-box">
+            設定カット時間: <span id="cut-display" style="font-weight:bold; color:#e74c3c;">0.5</span> 秒
+        </div>
     </div>
 
-    <button id="setup-btn" onclick="initAudio()">1. 音を読み込む（青色になれば成功）</button>
+    <button id="setup-btn" style="width:90%; padding:15px; margin-bottom:10px; border-radius:10px; background:#e67e22; color:white; border:none; font-weight:bold;" onclick="initAudio()">1. 音を準備する</button>
 
     <div id="stage"><div id="card" class="card">音</div></div>
 
     <div class="controls">
-        <p>GitHub上の `sounds/card.mp3` を使います</p>
-        <button id="play-btn" onclick="playWithSound()">2. カードを出す！</button>
+        <div>再生の長さ</div>
+        <button class="btn-plus-minus" onclick="changeCut(-0.1)">－</button>
+        <span id="val-display" style="font-size: 1.5rem; font-weight: bold;">0.5</span>
+        <button class="btn-plus-minus" onclick="changeCut(0.1)">＋</button>
+        
+        <button id="play-btn" onclick="playWithSound()">2. 音を聴く（カード移動）</button>
     </div>
 
     <script>
-        let audioCtx;
-        // リポジトリ内の sounds フォルダにある card.mp3 を指定
         const cardSound = new Audio('./sounds/card.mp3'); 
+        let isReady = false;
+        let cutTime = 0.5;
+
+        function changeCut(delta) {
+            cutTime = Math.max(0.1, Math.min(2.0, cutTime + delta));
+            document.getElementById('cut-display').innerText = cutTime.toFixed(1);
+            document.getElementById('val-display').innerText = cutTime.toFixed(1);
+        }
 
         function initAudio() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             cardSound.load();
-            // iPad対策の空再生
-            cardSound.play().then(() => { 
-                cardSound.pause(); 
-                cardSound.currentTime = 0; 
-                document.getElementById('setup-btn').innerText = "準備完了！";
+            cardSound.volume = 0;
+            cardSound.play().then(() => {
+                cardSound.pause();
+                cardSound.currentTime = 0;
+                cardSound.volume = 1.0;
+                isReady = true;
+                document.getElementById('setup-btn').innerText = "準備OK";
                 document.getElementById('setup-btn').style.background = "#27ae60";
-            }).catch(e => {
-                alert("まだ音が無いか、URLが違います。");
             });
         }
 
         function playWithSound() {
+            if(!isReady) return;
             const card = document.getElementById('card');
-            if (!card.classList.contains('active')) {
-                cardSound.currentTime = 0;
-                cardSound.play();
-            }
-            card.classList.toggle('active');
+            
+            // 毎回必ず最初から鳴らす
+            cardSound.currentTime = 0;
+            cardSound.play();
+            
+            card.classList.add('active');
+            
+            // プログラムで指定時間後にストップ
+            setTimeout(() => {
+                cardSound.pause();
+                card.classList.remove('active');
+            }, cutTime * 1000);
         }
     </script>
 </body>
