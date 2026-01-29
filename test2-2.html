@@ -3,77 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>test2-2：音の聞き比べ</title>
     <style>
         body { background: #fdfdfd; display: flex; flex-direction: column; align-items: center; padding: 20px; font-family: sans-serif; }
         .debug-info { background: #444; color: #fff; padding: 10px; border-radius: 5px; width: 90%; margin-bottom: 20px; font-size: 0.8rem; }
         
-        #stage { width: 300px; height: 250px; border: 2px dashed #ddd; position: relative; margin-bottom: 50px; background: white; }
+        #stage { width: 300px; height: 250px; border: 2px dashed #ddd; position: relative; margin-bottom: 30px; background: white; border-radius: 10px; }
         .card {
             width: 70px; height: 100px; background: white; border: 2px solid #333; border-radius: 8px;
             display: flex; align-items: center; justify-content: center; font-size: 2rem;
             position: absolute; bottom: -110px; left: 115px;
-            transition: all 0.5s ease-out;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .active { bottom: 70px; transform: scale(1.2); }
 
-        .controls { background: #fff; padding: 15px; border: 1px solid #eee; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; }
-        .sound-btn { padding: 10px 20px; margin: 5px; cursor: pointer; border-radius: 10px; border: 2px solid #ccc; background: white; font-weight: bold; }
-        .selected { background: #FF69B4; color: white; border-color: #FF69B4; }
-        #play-btn { margin-top: 20px; padding: 15px 40px; font-size: 1.2rem; background: #333; color: white; border: none; border-radius: 50px; cursor: pointer; }
+        .controls { background: #fff; padding: 20px; border: 1px solid #eee; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; text-align: center; }
+        .sound-btn { width: 100%; padding: 12px; margin: 5px 0; cursor: pointer; border-radius: 8px; border: 1px solid #ccc; background: #f9f9f9; font-size: 1rem; text-align: left; }
+        .selected { background: #FF69B4; color: white; border-color: #FF69B4; font-weight: bold; }
+        
+        #play-btn { margin-top: 20px; padding: 15px 40px; font-size: 1.2rem; background: #333; color: white; border: none; border-radius: 50px; cursor: pointer; width: 100%; }
+        #setup-btn { background: #4CAF50; color: white; padding: 10px; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="debug-info">
-        <p><strong>ファイル名:</strong> test2-2.html</p>
-        <p><strong>目的:</strong> カード音の聞き比べ（電子音 vs リアル音）</p>
+        <p><strong>ファイル名:</strong> test2-2.html / <strong>目的:</strong> カード音の聞き比べ</p>
     </div>
+
+    <button id="setup-btn" onclick="initAudio()">最初に1回押してね（音の準備）</button>
 
     <div id="stage"><div id="card" class="card">あ</div></div>
 
     <div class="controls">
-        <p>音の種類を選んでね：</p>
-        <button id="btn1" class="sound-btn selected" onclick="setSound('digital')">1. 電子音(ピコッ)</button>
-        <button id="btn2" class="sound-btn" onclick="setSound('real')">2. リアル音(シュッ)</button>
-        <br>
+        <button id="mode0" class="sound-btn selected" onclick="setMode(0)">1. 電子音（ポヨッ）</button>
+        <button id="mode1" class="sound-btn" onclick="setMode(1)">2. リアル音：シュッ（スライド）</button>
+        <button id="mode2" class="sound-btn" onclick="setMode(2)">3. リアル音：パシッ（鋭い）</button>
+        <button id="mode3" class="sound-btn" onclick="setMode(3)">4. リアル音：ペラッ（紙の音）</button>
+        <button id="mode4" class="sound-btn" onclick="setMode(4)">5. リアル音：ピコーン（正解風）</button>
+        
         <button id="play-btn" onclick="playWithSound()">カードを出す！</button>
     </div>
 
     <script>
-        let soundMode = 'digital';
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let currentMode = 0;
+        let audioCtx;
         
-        // リアルな音源ファイル（仮のフリー音源URL）
-        const realSound = new Audio('https://otologic.jp/free/se/bin/card-slid1.mp3');
+        // 音源のリスト（フリー素材）
+        const sounds = [
+            null, // 0は電子音なのでnull
+            new Audio('https://otologic.jp/free/se/bin/card-slid1.mp3'), // シュッ
+            new Audio('https://otologic.jp/free/se/bin/card-open1.mp3'), // パシッ
+            new Audio('https://otologic.jp/free/se/bin/card-turn1.mp3'), // ペラッ
+            new Audio('https://otologic.jp/free/se/bin/quiz-correct1.mp3') // ピコーン
+        ];
 
-        function setSound(mode) {
-            soundMode = mode;
-            document.getElementById('btn1').classList.toggle('selected', mode === 'digital');
-            document.getElementById('btn2').classList.toggle('selected', mode === 'real');
+        function initAudio() {
+            // Web Audio Contextの作成（iPadの音鳴り制限を解除する儀式）
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                // 軽く音を鳴らして「準備完了」とする
+                const osc = audioCtx.createOscillator();
+                osc.connect(audioCtx.destination);
+                osc.start(); osc.stop(0.1);
+            }
+            document.getElementById('setup-btn').style.display = 'none';
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            for(let i=0; i<=4; i++) {
+                document.getElementById('mode' + i).classList.toggle('selected', i === mode);
+            }
         }
 
         function playWithSound() {
             const card = document.getElementById('card');
             
-            // カードが場に出るタイミングで音を鳴らす
             if (!card.classList.contains('active')) {
-                if (soundMode === 'digital') {
+                if (currentMode === 0) {
                     playDigitalSound();
                 } else {
-                    realSound.currentTime = 0;
-                    realSound.play();
+                    const audio = sounds[currentMode];
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.play().catch(e => console.log("音の再生に失敗:", e));
                 }
             }
-            
             card.classList.toggle('active');
         }
 
         function playDigitalSound() {
+            if(!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+            osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.3);
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
