@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>test2-2：音の聞き比べ</title>
+    <title>test2-2：音の聞き比べ（音源再生テスト）</title>
     <style>
         body { background: #fdfdfd; display: flex; flex-direction: column; align-items: center; padding: 20px; font-family: sans-serif; }
         .debug-info { background: #444; color: #fff; padding: 10px; border-radius: 5px; width: 90%; margin-bottom: 20px; font-size: 0.8rem; }
@@ -22,7 +22,9 @@
         .selected { background: #FF69B4; color: white; border-color: #FF69B4; font-weight: bold; }
         
         #play-btn { margin-top: 20px; padding: 15px 40px; font-size: 1.2rem; background: #333; color: white; border: none; border-radius: 50px; cursor: pointer; width: 100%; }
-        #setup-btn { background: #4CAF50; color: white; padding: 10px; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer; }
+        
+        /* 準備ボタンを大きく目立たせる */
+        #setup-btn { background: #FF4500; color: white; padding: 20px; border: none; border-radius: 10px; margin-bottom: 20px; cursor: pointer; font-size: 1.2rem; font-weight: bold; width: 100%; }
     </style>
 </head>
 <body>
@@ -31,7 +33,7 @@
         <p><strong>ファイル名:</strong> test2-2.html / <strong>目的:</strong> カード音の聞き比べ</p>
     </div>
 
-    <button id="setup-btn" onclick="initAudio()">最初に1回押してね（音の準備）</button>
+    <button id="setup-btn" onclick="initAudio()">【重要】ここを押して音を有効にする</button>
 
     <div id="stage"><div id="card" class="card">あ</div></div>
 
@@ -49,25 +51,34 @@
         let currentMode = 0;
         let audioCtx;
         
-        // 音源のリスト（フリー素材）
-        const sounds = [
-            null, // 0は電子音なのでnull
-            new Audio('https://otologic.jp/free/se/bin/card-slid1.mp3'), // シュッ
-            new Audio('https://otologic.jp/free/se/bin/card-open1.mp3'), // パシッ
-            new Audio('https://otologic.jp/free/se/bin/card-turn1.mp3'), // ペラッ
-            new Audio('https://otologic.jp/free/se/bin/quiz-correct1.mp3') // ピコーン
+        // 音源リスト
+        const soundUrls = [
+            null,
+            'https://otologic.jp/free/se/bin/card-slid1.mp3',
+            'https://otologic.jp/free/se/bin/card-open1.mp3',
+            'https://otologic.jp/free/se/bin/card-turn1.mp3',
+            'https://otologic.jp/free/se/bin/quiz-correct1.mp3'
         ];
+        const audioObjects = [];
 
         function initAudio() {
-            // Web Audio Contextの作成（iPadの音鳴り制限を解除する儀式）
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                // 軽く音を鳴らして「準備完了」とする
-                const osc = audioCtx.createOscillator();
-                osc.connect(audioCtx.destination);
-                osc.start(); osc.stop(0.1);
-            }
-            document.getElementById('setup-btn').style.display = 'none';
+            // Web Audio Contextの作成
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // 全てのリアル音源をロードし、一度再生して即停止（iPadの制限解除）
+            soundUrls.forEach((url, index) => {
+                if (url) {
+                    const a = new Audio(url);
+                    a.load();
+                    // iPadで音を許可させるための「空再生」
+                    a.play().then(() => { a.pause(); a.currentTime = 0; }).catch(e => {});
+                    audioObjects[index] = a;
+                }
+            });
+
+            document.getElementById('setup-btn').innerText = "準備完了！";
+            document.getElementById('setup-btn').style.background = "#4CAF50";
+            setTimeout(() => { document.getElementById('setup-btn').style.display = 'none'; }, 1000);
         }
 
         function setMode(mode) {
@@ -84,10 +95,11 @@
                 if (currentMode === 0) {
                     playDigitalSound();
                 } else {
-                    const audio = sounds[currentMode];
-                    audio.pause();
-                    audio.currentTime = 0;
-                    audio.play().catch(e => console.log("音の再生に失敗:", e));
+                    const audio = audioObjects[currentMode];
+                    if (audio) {
+                        audio.currentTime = 0;
+                        audio.play();
+                    }
                 }
             }
             card.classList.toggle('active');
