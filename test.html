@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { background: #e0f0ff; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
+        /* カードが動く「場」 */
+        #field { width: 300px; height: 400px; border: 2px dashed #999; position: relative; background: white; border-radius: 10px; }
+
+        /* カードの見た目 */
+        .card {
+            width: 80px; height: 110px;
+            background: white; border: 2px solid #FF69B4; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; font-weight: bold; color: #FF69B4;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            
+            /* 【ここが魔法】位置の変化を0.5秒かけて滑らかにする設定 */
+            transition: all 0.5s ease-out;
+            position: absolute;
+        }
+
+        /* 最初の場所（画面の下の方） */
+        .bottom { bottom: -150px; left: 110px; }
+
+        /* 移動後の場所（場の中央） */
+        .center { bottom: 145px; left: 110px; transform: scale(1.2); }
+
+        button { margin-top: 20px; padding: 10px 20px; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+    <div id="field">
+        <div id="testCard" class="card bottom">あ</div>
+    </div>
+
+    <button onclick="moveCard()">カードを出す！</button>
+
+    <script>
+        function moveCard() {
+            const card = document.getElementById('testCard');
+            // クラスを書き換えるだけで、CSSが勝手にスルスル動かしてくれます
+            card.classList.toggle('center');
+        }
+    </script>
+</body>
+</html>
