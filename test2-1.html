@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { background: #f0f0f0; display: flex; flex-direction: column; align-items: center; padding-top: 50px; }
+        #stage { width: 300px; height: 300px; border: 2px dashed #ccc; position: relative; margin-bottom: 100px; }
+        .card {
+            width: 70px; height: 100px; background: white; border: 2px solid #333; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; font-size: 2rem;
+            position: absolute; bottom: -120px; left: 115px;
+            transition-property: all; /* ここが動く設定 */
+        }
+        .active { bottom: 100px; transform: scale(1.2); }
+        .controls { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <div id="stage"><div id="card" class="card">あ</div></div>
+    <div class="controls">
+        速度(秒): <input type="number" id="speed" value="0.6" step="0.1" style="width:50px"> <br><br>
+        <button onclick="testMove()">動きをチェック！</button>
+    </div>
+    <script>
+        function testMove() {
+            const card = document.getElementById('card');
+            const speed = document.getElementById('speed').value;
+            // デジタルに速度を書き換える
+            card.style.transitionDuration = speed + 's';
+            card.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
