@@ -3,48 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ことばあそび：キャッチボール Ver1.10</title>
     <style>
-        body { background: #fff; display: flex; flex-direction: column; align-items: center; height: 100vh; margin:0; font-family: sans-serif; }
-        .debug-info { background: #eef; color: #33a; padding: 10px; width: 100%; box-sizing: border-box; font-size: 0.8rem; border-bottom: 1px solid #ccd; }
+        body { background: #f0f4f8; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; overflow: hidden; }
+        .debug-tag { position: absolute; top: 10px; width: 90%; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 8px; font-size: 0.8rem; border-left: 4px solid #3498db; }
         
-        .area { width: 100%; height: 30%; display: flex; justify-content: center; align-items: center; position: relative; }
+        /* ステージ */
+        #stage { width: 320px; height: 450px; position: relative; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        /* カードのデザイン */
         .card { 
-            width: 70px; height: 100px; border: 2px solid #FF69B4; border-radius: 10px; 
-            background: white; display: flex; align-items: center; justify-content: center; font-size: 2rem;
-            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: absolute;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            width: 80px; height: 110px; background: white; border: 3px solid #3498db; border-radius: 12px; 
+            position: absolute; left: 120px; display: flex; align-items: center; justify-content: center; 
+            font-size: 2.5rem; font-weight: bold; color: #3498db; transition: all 1.2s cubic-bezier(0.25, 1, 0.5, 1);
         }
-        .jiji-init { top: 20px; border-color: #4169E1; color: #4169E1; }
-        .kaito-init { bottom: 20px; border-color: #FF69B4; color: #FF69B4; }
         
-        .play-kaito { transform: translateY(-160px) scale(1.1); }
-        .play-jiji { transform: translateY(160px) scale(1.1); }
-        
-        #msg { height: 40px; font-weight: bold; color: #666; display: flex; align-items: center; }
+        /* 位置：上（じじ側） */
+        .pos-top { top: 30px; transform: scale(0.9); opacity: 0.8; }
+        /* 位置：下（凱士くん側） */
+        .pos-bottom { top: 310px; transform: scale(1.1); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+
+        #msg { position: absolute; top: 200px; width: 100%; text-align: center; color: #7f8c8d; }
+        #setup-layer { position: absolute; inset: 0; background: rgba(255,255,255,0.9); z-index: 10; display: flex; align-items: center; justify-content: center; border-radius: 20px; }
     </style>
 </head>
 <body>
-    <div class="debug-info">
-        <p><strong>ファイル名:</strong> test3.html / <strong>目的:</strong> じじAIとのキャッチボール（1秒の待ち時間）</p>
+
+    <div class="debug-tag">
+        <p><strong>ファイル名:</strong> test3.html</p>
+        <p><strong>目的:</strong> じじが見つけた美味しい音（1.4s開始/1.2s持続）でキャッチボール。</p>
+        <p><strong>Ver:</strong> 1.10</p>
     </div>
 
-    <div class="area"><div id="jijiCard" class="card jiji-init">い</div></div>
-    
-    <div id="msg">下のカードをタップしてね</div>
-    
-    <div class="area"></div>
-    <div class="area"><div id="kaitoCard" class="card kaito-init" onclick="startTurn()">あ</div></div>
+    <div id="stage">
+        <div id="setup-layer">
+            <button onclick="startApp()" style="padding:20px; font-size:1.2rem; background:#27ae60; color:white; border:none; border-radius:10px;">
+                はじめる（音の準備）
+            </button>
+        </div>
+        
+        <div id="msg">下のカードをタップしてね</div>
+        <div id="card" class="card pos-bottom" onclick="throwCard()">い</div>
+    </div>
 
     <script>
-        function startTurn() {
-            document.getElementById('msg').innerText = "じじが考えてるよ...";
-            document.getElementById('kaitoCard').classList.add('play-kaito');
+        const cardSound = new Audio('./sounds/card.mp3');
+        let isTop = false;
+
+        function startApp() {
+            cardSound.load();
+            cardSound.volume = 0;
+            cardSound.play().then(() => {
+                cardSound.pause();
+                cardSound.volume = 1.0;
+                document.getElementById('setup-layer').style.display = 'none';
+            });
+        }
+
+        function throwCard() {
+            const card = document.getElementById('card');
             
-            // 1000ミリ秒（1秒）待ってから実行
-            setTimeout(() => {
-                document.getElementById('jijiCard').classList.add('play-jiji');
-                document.getElementById('msg').innerText = "じじが返したよ！";
-            }, 1000);
+            // じじ様が選んだ「美味しい部分」を再生
+            cardSound.currentTime = 1.4; // 1.4秒目から
+            cardSound.play();
+            
+            if (!isTop) {
+                // 凱士くんからじじへ飛ばす
+                card.className = 'card pos-top';
+                isTop = true;
+                // 1.2秒後に音を止める（じじ様の調整値）
+                setTimeout(() => { 
+                    cardSound.pause(); 
+                    // 1秒待ってじじが自動で返し始める演出
+                    setTimeout(returnCard, 1000); 
+                }, 1200);
+            }
+        }
+
+        function returnCard() {
+            const card = document.getElementById('card');
+            // 返す時も同じ音を鳴らす
+            cardSound.currentTime = 1.4;
+            cardSound.play();
+            
+            card.className = 'card pos-bottom';
+            isTop = false;
+            
+            setTimeout(() => { cardSound.pause(); }, 1200);
         }
     </script>
 </body>
