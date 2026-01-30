@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ことばあそび Ver1.30</title>
+    <style>
+        :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
+        
+        /* ふあふあ防止設定 */
+        html, body { 
+            overflow: hidden; height: 100%; position: fixed; width: 100%;
+            background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; 
+        }
+
+        /* デバッグパネル */
+        #debug-panel { color: #ccc; font-size: 0.7rem; width: 100%; padding: 10px; z-index: 100; }
+        .hidden { display: none !important; }
+
+        /* メインステージ：Googleの4色グラデーション＋外枠 */
+        #mobile-stage { 
+            width: 100vw; max-width: 375px; height: 100vh; max-height: 812px;
+            background: radial-gradient(circle, #ffffff 0%, #f0f0f0 100%);
+            position: relative; overflow: hidden;
+            border: 8px solid;
+            border-image: linear-gradient(to bottom, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green)) 1;
+        }
+
+        /* じじエリア（青） */
+        .area-jiji { height: 25%; background: var(--g-blue); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 10px; }
+        /* 凱士エリア（黄） */
+        .area-kaito { height: 35%; background: var(--g-yellow); position: absolute; bottom: 0; width: 100%; display: flex; justify-content: space-around; align-items: center; padding-bottom: 20px; }
+        
+        /* 中央（照明が当たっているような背景画像風） */
+        .area-mid { height: 40%; background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%); display: flex; align-items: center; justify-content: center; }
+
+        /* キャラアイコン */
+        .icon { width: 50px; height: 50px; border-radius: 50%; border: 3px solid white; background: white; margin-bottom: 5px; overflow: hidden; }
+
+        /* カードとデッキ */
+        .card-deck { position: absolute; left: -100px; top: 50%; transform: translateY(-50%); width: 60px; height: 80px; background: white; border: 2px solid #ccc; border-radius: 5px; z-index: 10; transition: all 0.6s ease-out; opacity: 0; }
+        
+        .card { width: 70px; height: 100px; background: white; border: 2px solid #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); }
+        .jiji-card { width: 40px; height: 60px; font-size: 1rem; margin: 2px; }
+
+        #deal-btn { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); padding: 10px; background: white; border-radius: 5px; font-size: 0.7rem; cursor: pointer; z-index: 20; }
+    </style>
+</head>
+<body>
+
+    <div id="debug-panel">
+        <p>ファイル名: test5.html / Ver: 1.30 
+           OFF <input type="checkbox" onchange="toggleDebug(this)">
+        </p>
+        <p>目的: Googleカラー & カード配布演出実験</p>
+    </div>
+
+    <div id="mobile-stage">
+        <div id="deal-btn" onclick="dealCards()">カードを配る</div>
+
+        <div class="area-jiji">
+            <div class="icon"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=jiji" width="100%"></div>
+            <div id="jiji-hand" style="display:flex;">
+                </div>
+        </div>
+
+        <div class="area-mid">
+            </div>
+
+        <div class="area-kaito">
+            <div id="kaito-hand" style="display:flex; gap:10px;">
+                </div>
+            <div style="position:absolute; bottom:5px; text-align:center;">
+                <div class="icon"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=kaito" width="100%"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleDebug(cb) {
+            if(cb.checked) {
+                document.getElementById('debug-panel').classList.add('hidden');
+            }
+        }
+
+        function dealCards() {
+            const kaitoHand = document.getElementById('kaito-hand');
+            const jijiHand = document.getElementById('jiji-hand');
+            const words = ['あ', 'に', 'う'];
+            
+            kaitoHand.innerHTML = '';
+            jijiHand.innerHTML = '';
+
+            words.forEach((word, i) => {
+                setTimeout(() => {
+                    // 凱士くんのカード
+                    const c = document.createElement('div');
+                    c.className = 'card';
+                    c.innerText = word;
+                    c.style.transform = 'translateX(-300px)'; // 左から飛んでくる
+                    kaitoHand.appendChild(c);
+                    setTimeout(() => c.style.transform = 'translateX(0)', 50);
+
+                    // じじの裏向きカード（小さめ）
+                    const jc = document.createElement('div');
+                    jc.className = 'card jiji-card';
+                    jc.style.background = 'var(--g-blue)';
+                    jc.style.transform = 'translateX(-300px)';
+                    jijiHand.appendChild(jc);
+                    setTimeout(() => jc.style.transform = 'translateX(0)', 50);
+                }, i * 200);
+            });
+        }
+    </script>
+</body>
+</html>
