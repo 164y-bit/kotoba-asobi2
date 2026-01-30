@@ -3,110 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ことばあそび：ステージ構築 Ver1.20</title>
     <style>
-        body { 
-            margin: 0; height: 100vh; overflow: hidden; font-family: sans-serif;
-            background-color: #000; /* 背景を暗くして透明度を見やすく */
-            display: flex; flex-direction: column; align-items: center;
-        }
-
-        /* 背景画像レイヤー */
-        #bg-image {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url('https://img.freepik.com/free-vector/cartoon-forest-landscape-background_23-2148902598.jpg');
-            background-size: cover; background-position: center;
-            z-index: -1; opacity: 0.5; /* 初期透明度 */
-        }
-
-        .debug-info { background: rgba(0,0,0,0.8); color: #0f0; padding: 10px; width: 100%; font-size: 0.8rem; z-index: 100; }
+        /* iPadでもスマホサイズに見えるように中央に配置 */
+        body { background: #555; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         
-        /* 設定メニュー（簡易版） */
-        .menu { background: white; padding: 15px; border-radius: 15px; margin-top: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 50; }
-        .btn-sm { padding: 5px 10px; font-size: 1.2rem; cursor: pointer; border-radius: 5px; border: 1px solid #ccc; }
-
-        .card {
-            width: 80px; height: 110px; background: white; border: 3px solid #FF69B4; border-radius: 10px;
-            display: flex; align-items: center; justify-content: center; font-size: 2.5rem;
-            position: absolute; bottom: 50px; transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3); cursor: pointer;
+        #mobile-container { 
+            width: 375px; height: 667px; background: #f0f4f8; position: relative; 
+            overflow: hidden; border-radius: 10px; box-shadow: 0 0 50px rgba(0,0,0,0.5);
         }
-        .played { transform: translateY(-300px) scale(1.2) rotate(10deg); }
 
-        /* キラキラ */
-        .sparkle { position: absolute; pointer-events: none; border-radius: 50%; animation: fly 1s forwards; }
-        @keyframes fly { 0% { transform: translate(0,0); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)); opacity: 0; } }
+        .debug-tag { background: #2c3e50; color: white; padding: 10px; font-size: 0.7rem; }
+        
+        /* じじエリア */
+        #jiji-side { height: 150px; background: #d6eaf8; display: flex; justify-content: center; align-items: center; border-bottom: 2px dashed #3498db; }
+        
+        /* 凱士くんエリア */
+        #kaito-side { height: 250px; background: #fdf2e9; position: absolute; bottom: 0; width: 100%; display: flex; justify-content: space-around; align-items: center; border-top: 2px dashed #e67e22; }
+
+        /* ダミーカード */
+        .dummy-card { 
+            width: 70px; height: 100px; background: white; border: 2px solid #ccc; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; color: #999; font-size: 1.5rem;
+        }
+        .jiji-card { border-color: #3498db; }
+        .kaito-card { border-color: #e67e22; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="debug-info" id="debug">
-        <strong>test4:</strong> 背景透明度 & 音演出 実験 | 
-        音: <span id="sound-status">ON</span> | 背景: <span id="bg-val">0.5</span>
+    <div id="mobile-container">
+        <div class="debug-tag">
+            <p><strong>ファイル名:</strong> test4.html</p>
+            <p><strong>目的:</strong> モバイル表示想定のレイアウト確認（ダミー盤面）。</p>
+            <p><strong>Ver:</strong> 1.20</p>
+        </div>
+
+        <div id="jiji-side">
+            <div class="dummy-card jiji-card">じ</div>
+        </div>
+
+        <div style="text-align: center; margin-top: 50px; color: #7f8c8d;">
+            ここに言葉が飛んできます
+        </div>
+
+        <div id="kaito-side">
+            <div class="dummy-card kaito-card">あ</div>
+            <div class="dummy-card kaito-card">い</div>
+            <div class="dummy-card kaito-card">う</div>
+        </div>
     </div>
 
-    <div class="menu">
-        背景透明度: <button class="btn-sm" onclick="adjBg(-0.1)">－</button>
-        <button class="btn-sm" onclick="adjBg(0.1)">＋</button>
-        音: <button class="btn-sm" onclick="toggleSound()">ON/OFF</button>
-    </div>
-
-    <div id="bg-image"></div>
-    <div id="myCard" class="card" onclick="playAction(this)">あ</div>
-
-    <script>
-        let isSoundOn = true;
-        let bgOpacity = 0.5;
-
-        // 音の準備（ブラウザ標準の音色を作成）
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playBeep(freq, type, duration) {
-            if(!isSoundOn) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type; osc.frequency.value = freq;
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start();
-            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
-            osc.stop(audioCtx.currentTime + duration);
-        }
-
-        function adjBg(delta) {
-            bgOpacity = Math.max(0, Math.min(1, bgOpacity + delta));
-            document.getElementById('bg-image').style.opacity = bgOpacity;
-            document.getElementById('bg-val').innerText = bgOpacity.toFixed(1);
-        }
-
-        function toggleSound() {
-            isSoundOn = !isSoundOn;
-            document.getElementById('sound-status').innerText = isSoundOn ? "ON" : "OFF";
-        }
-
-        function playAction(card) {
-            card.classList.toggle('played');
-            
-            if(card.classList.contains('played')) {
-                // シュッという音（高音から低音へ）
-                playBeep(800, 'sine', 0.3);
-                // キラキラ音
-                setTimeout(() => playBeep(1200, 'triangle', 0.1), 100);
-                setTimeout(() => playBeep(1500, 'triangle', 0.1), 200);
-                
-                // キラキラ演出
-                for(let i=0; i<15; i++) createSparkle(card.offsetLeft+40, card.offsetTop+50);
-            }
-        }
-
-        function createSparkle(x, y) {
-            const s = document.createElement('div');
-            s.className = 'sparkle';
-            s.style.left = x + 'px'; s.style.top = y + 'px';
-            s.style.width = s.style.height = Math.random()*10+5 + 'px';
-            s.style.backgroundColor = `hsl(${Math.random()*360}, 100%, 70%)`;
-            s.style.setProperty('--tx', (Math.random()-0.5)*300 + 'px');
-            s.style.setProperty('--ty', (Math.random()-0.5)*300 + 'px');
-            document.body.appendChild(s);
-            setTimeout(() => s.remove(), 1000);
-        }
-    </script>
 </body>
 </html>
