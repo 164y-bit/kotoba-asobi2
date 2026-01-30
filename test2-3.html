@@ -3,83 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>test2-3：再生時間制御 Ver1.04</title>
+    <title>test2-3：音源抽出ツール Ver1.05</title>
     <style>
-        body { background: #eef7ff; display: flex; flex-direction: column; align-items: center; padding: 20px; font-family: sans-serif; }
-        .debug-info { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 8px; width: 90%; margin-bottom: 20px; font-size: 0.85rem; }
-        .status-box { background: white; padding: 10px; border-radius: 8px; margin-top: 10px; color: #333; border-left: 5px solid #3498db; }
+        body { background: #fdf5e6; display: flex; flex-direction: column; align-items: center; padding: 20px; font-family: sans-serif; color: #333; }
+        .debug-area { background: #34495e; color: #ecf0f1; padding: 15px; border-radius: 8px; width: 95%; margin-bottom: 20px; font-size: 0.9rem; }
+        .info-p { margin: 5px 0; border-bottom: 1px solid #5d6d7e; padding-bottom: 5px; }
         
-        #stage { width: 300px; height: 150px; border: 3px solid #3498db; position: relative; margin-bottom: 20px; background: white; border-radius: 15px; display: flex; justify-content: center; align-items: center; }
-        .card { width: 60px; height: 90px; background: white; border: 2px solid #2980b9; border-radius: 8px; transition: all 0.3s ease-out; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
-        .active { transform: scale(1.2) translateY(-20px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        #stage { width: 300px; height: 120px; border: 2px dashed #bdc3c7; position: relative; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; border-radius: 10px; background: white; }
+        .card { width: 60px; height: 80px; background: white; border: 2px solid #e67e22; border-radius: 8px; transition: 0.3s; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .active { transform: scale(1.1) translateY(-10px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
 
-        .controls { background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; text-align: center; }
-        .btn-plus-minus { width: 50px; height: 50px; font-size: 1.5rem; cursor: pointer; border-radius: 50%; border: 1px solid #ccc; margin: 0 10px; vertical-align: middle; }
-        #play-btn { margin-top: 20px; padding: 15px; font-size: 1.2rem; background: #3498db; color: white; border: none; border-radius: 50px; cursor: pointer; width: 100%; font-weight: bold; }
+        .panel { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 95%; box-sizing: border-box; }
+        .dial-group { display: flex; align-items: center; justify-content: space-between; margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 8px; }
+        .dial-label { font-weight: bold; font-size: 0.9rem; }
+        .btn-m { width: 44px; height: 44px; border-radius: 50%; border: 1px solid #ddd; background: white; font-size: 1.2rem; }
+        .val { font-size: 1.2rem; font-weight: bold; min-width: 60px; text-align: center; color: #e67e22; }
+        
+        #play-btn { margin-top: 10px; padding: 18px; font-size: 1.2rem; background: #e67e22; color: white; border: none; border-radius: 50px; cursor: pointer; width: 100%; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="debug-info">
-        <p><strong>ファイル名:</strong> test2-3.html</p>
-        <p><strong>目的:</strong> 再生カット時間のデジタル調整実験</p>
-        <div class="status-box">
-            設定カット時間: <span id="cut-display" style="font-weight:bold; color:#e74c3c;">0.5</span> 秒
-        </div>
+    <div class="debug-area">
+        <p class="info-p"><strong>ファイル名:</strong> test2-3.html</p>
+        <p class="info-p"><strong>目的:</strong> 音源の「再生開始位置」と「長さ」を自由に変えて、435KBの音源の美味しい部分だけを抽出する。</p>
+        <p class="info-p"><strong>Ver:</strong> 1.05 (ダイヤル2基搭載版)</p>
     </div>
 
-    <button id="setup-btn" style="width:90%; padding:15px; margin-bottom:10px; border-radius:10px; background:#e67e22; color:white; border:none; font-weight:bold;" onclick="initAudio()">1. 音を準備する</button>
+    <button id="setup-btn" style="width:95%; padding:15px; margin-bottom:15px; background:#7f8c8d; color:white; border:none; border-radius:10px;" onclick="initAudio()">1. 音を準備する（まずここをタップ）</button>
 
     <div id="stage"><div id="card" class="card">音</div></div>
 
-    <div class="controls">
-        <div>再生の長さ</div>
-        <button class="btn-plus-minus" onclick="changeCut(-0.1)">－</button>
-        <span id="val-display" style="font-size: 1.5rem; font-weight: bold;">0.5</span>
-        <button class="btn-plus-minus" onclick="changeCut(0.1)">＋</button>
+    <div class="panel">
+        <div class="dial-group">
+            <span class="dial-label">① 開始位置 (秒)</span>
+            <button class="btn-m" onclick="changeVal('start', -0.1)">-</button>
+            <span id="start-val" class="val">0.0</span>
+            <button class="btn-m" onclick="changeVal('start', 0.1)">+</button>
+        </div>
+
+        <div class="dial-group">
+            <span class="dial-label">② 鳴らす長さ (秒)</span>
+            <button class="btn-m" onclick="changeVal('dur', -0.1)">-</button>
+            <span id="dur-val" class="val">0.5</span>
+            <button class="btn-m" onclick="changeVal('dur', 0.1)">+</button>
+        </div>
         
-        <button id="play-btn" onclick="playWithSound()">2. 音を聴く（カード移動）</button>
+        <button id="play-btn" onclick="playPick()">2. 抽出した音を聴く</button>
     </div>
 
     <script>
-        const cardSound = new Audio('./sounds/card.mp3'); 
+        const sound = new Audio('./sounds/card.mp3'); 
         let isReady = false;
-        let cutTime = 0.5;
+        let startTime = 0.0;
+        let duration = 0.5;
 
-        function changeCut(delta) {
-            cutTime = Math.max(0.1, Math.min(2.0, cutTime + delta));
-            document.getElementById('cut-display').innerText = cutTime.toFixed(1);
-            document.getElementById('val-display').innerText = cutTime.toFixed(1);
+        function changeVal(target, delta) {
+            if(target === 'start') {
+                startTime = Math.max(0, startTime + delta);
+                document.getElementById('start-val').innerText = startTime.toFixed(1);
+            } else {
+                duration = Math.max(0.1, duration + delta);
+                document.getElementById('dur-val').innerText = duration.toFixed(1);
+            }
         }
 
         function initAudio() {
-            cardSound.load();
-            cardSound.volume = 0;
-            cardSound.play().then(() => {
-                cardSound.pause();
-                cardSound.currentTime = 0;
-                cardSound.volume = 1.0;
+            sound.load();
+            sound.volume = 0;
+            sound.play().then(() => {
+                sound.pause();
+                sound.volume = 1.0;
                 isReady = true;
-                document.getElementById('setup-btn').innerText = "準備OK";
+                document.getElementById('setup-btn').innerText = "準備OK！";
                 document.getElementById('setup-btn').style.background = "#27ae60";
             });
         }
 
-        function playWithSound() {
+        function playPick() {
             if(!isReady) return;
             const card = document.getElementById('card');
             
-            // 毎回必ず最初から鳴らす
-            cardSound.currentTime = 0;
-            cardSound.play();
+            // プログラム制御のキモ：狙った秒数までジャンプ！
+            sound.currentTime = startTime;
+            sound.play();
             
             card.classList.add('active');
             
-            // プログラムで指定時間後にストップ
+            // 指定した長さが経過したらストップ
             setTimeout(() => {
-                cardSound.pause();
+                sound.pause();
                 card.classList.remove('active');
-            }, cutTime * 1000);
+            }, duration * 1000);
         }
     </script>
 </body>
