@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ことばあそび Ver1.32</title>
+    <title>ことばあそび Ver1.31</title>
     <style>
         :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
         
@@ -12,6 +12,7 @@
             background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; 
         }
 
+        /* デバッグパネル（初期ON） */
         #debug-panel { color: #ccc; font-size: 0.7rem; width: 100%; padding: 10px; z-index: 100; }
         .hidden { display: none !important; }
 
@@ -21,140 +22,106 @@
             position: relative; overflow: hidden;
             border: 8px solid;
             border-image: linear-gradient(to bottom, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green)) 1;
-            display: flex; flex-direction: column;
         }
 
-        /* じじエリア（20%） */
-        .area-jiji { flex: 2; background: var(--g-blue); display: flex; flex-direction: column; align-items: center; padding-top: 15px; }
-        /* 中央エリア（35%） */
-        .area-mid { flex: 3.5; position: relative; display: flex; align-items: center; justify-content: center; }
-        /* 凱士エリア（45%） */
-        .area-kaito { flex: 4.5; background: var(--g-yellow); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 15px; }
-
-        .icon { width: 55px; height: 55px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; }
-
-        /* カードの基本設定 */
-        .hand-grid { display: flex; gap: 5px; justify-content: center; width: 100%; padding: 10px 0; }
+        /* じじエリア（青） */
+        .area-jiji { height: 28%; background: var(--g-blue); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 10px; }
+        /* 凱士エリア（黄） */
+        .area-kaito { height: 35%; background: var(--g-yellow); position: absolute; bottom: 0; width: 100%; display: flex; justify-content: space-around; align-items: center; padding-bottom: 20px; }
         
+        .area-mid { height: 37%; display: flex; align-items: center; justify-content: center; }
+
+        .icon { width: 45px; height: 45px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; transition: transform 0.5s ease; }
+        #jiji-icon { transform: translateY(100px); } /* 初期は下に隠れている */
+        .icon-active { transform: translateY(0) !important; }
+
+        /* 手札のグリッド */
+        .hand-grid { display: flex; gap: 10px; justify-content: center; min-height: 100px; width: 100%; }
+
         .card { 
-            background: white; border: 1px solid #ddd; border-radius: 6px; 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: bold; box-shadow: 1px 1px 5px rgba(0,0,0,0.1);
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 70px; height: 100px; background: white; border: 2px solid #ddd; border-radius: 8px; 
+            display: flex; align-items: center; justify-content: center; font-size: 2rem; 
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.1); transition: opacity 0.3s ease-out;
+            position: relative;
         }
+        .jiji-card { width: 40px; height: 60px; font-size: 1rem; background: #ccc; }
+        .empty-card { background: #eee; border: 2px dashed #ccc; color: #bbb; } /* データなし */
 
-        /* じじカード：さらに小さく */
-        .jiji-card { width: 30px; height: 45px; font-size: 0.8rem; }
-        /* 凱士カード：大きく（9文字並ぶよう調整） */
-        .kaito-card { width: 36px; height: 55px; font-size: 1.2rem; cursor: pointer; }
-
-        /* 中央に出た時のスタイル */
-        .played-jiji { transform: scale(2.5) rotate(180deg) !important; z-index: 10; position: absolute !important; }
-        .played-kaito { transform: scale(0.8) !important; z-index: 11; position: absolute !important; }
-
-        #qr-area { text-align: center; background: white; padding: 5px; border-radius: 5px; display: inline-block; }
-        .btn { cursor: pointer; padding: 8px 15px; background: white; border-radius: 20px; font-weight: bold; border: none; font-size: 0.8rem; }
+        #qr-area { margin-top: 10px; text-align: center; }
+        #deal-btn { cursor: pointer; padding: 5px 10px; background: white; border-radius: 4px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="debug-panel">
-        <span>Ver: 1.32</span> 
-        <input id="debug-cb" type="checkbox" onchange="toggleDebug()"> OFF
-        <button id="deal-btn" class="btn" onclick="dealCards()">カードを配る</button>
-        <div id="qr-wrap" style="margin-top:5px;"><div id="qr-area"></div></div>
+        <p>ファイル名: test5.html / Ver: 1.31 
+           OFFにする <input id="debug-cb" type="checkbox" onchange="toggleDebug()">
+           <span id="deal-btn" onclick="dealCards()">配布開始</span>
+        </p>
+        <div id="qr-area">
+            <img id="qr-img" width="80">
+        </div>
     </div>
 
     <div id="mobile-stage">
         <div class="area-jiji">
-            <div class="icon"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=jiji" width="100%"></div>
-            <div id="jiji-hand" class="hand-grid"></div>
+            <div id="jiji-icon" class="icon"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=jiji" width="100%"></div>
+            <div id="jiji-hand" class="hand-grid" style="margin-top:10px;"></div>
         </div>
 
-        <div id="center-stage" class="area-mid">
-            <div style="color:#ccc; font-size:0.8rem;">ここにカードを出す</div>
-        </div>
+        <div class="area-mid"></div>
 
         <div class="area-kaito">
             <div id="kaito-hand" class="hand-grid"></div>
-            <div class="icon"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=kaito" width="100%"></div>
+            <div style="position:absolute; bottom:5px;">
+                <div class="icon"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=kaito" width="100%"></div>
+            </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
         function toggleDebug() {
-            if(document.getElementById('debug-cb').checked) {
+            const isOff = document.getElementById('debug-cb').checked;
+            if(isOff) {
                 document.getElementById('debug-panel').classList.add('hidden');
             }
         }
 
-        // QRコード生成（ライブラリ使用で見やすく）
-        new QRCode(document.getElementById("qr-area"), { text: window.location.href, width: 70, height: 70 });
+        // QRコード生成
+        document.getElementById('qr-img').src = "https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=" + encodeURIComponent(window.location.href);
 
         async function dealCards() {
-            const btn = document.getElementById('deal-btn');
-            btn.innerText = "もう一回";
-            
-            const kHand = document.getElementById('kaito-hand');
-            const jHand = document.getElementById('jiji-hand');
-            const center = document.getElementById('center-stage');
-            kHand.innerHTML = jHand.innerHTML = '';
-            center.innerHTML = '';
+            // アイコンを上に移動
+            document.getElementById('jiji-icon').classList.add('icon-active');
 
-            const word = "トイレットペーパー";
-            const chars = word.split('').reverse(); // 右から配るため反転
+            const kaitoHand = document.getElementById('kaito-hand');
+            const jijiHand = document.getElementById('jiji-hand');
+            kaitoHand.innerHTML = '';
+            jijiHand.innerHTML = '';
 
-            for(let i = 0; i < chars.length; i++) {
-                // 凱士に配る
-                await createCard(kHand, chars[i], 'card kaito-card', i, true);
-                // じじに配る（裏向き・空）
-                await createCard(jHand, '', 'card jiji-card', i, false);
+            const words = ['う', 'に', 'あ']; // 右から配るため、配列を逆にしておく
+            const total = 3;
+
+            // 配布順序: 右(0) -> 中(1) -> 左(2) の順で、凱士とじじを交互に
+            for(let i = 0; i < total; i++) {
+                // 凱士(奇数番目)
+                await appendCard(kaitoHand, words[i], 'card', i);
+                // じじ(偶数番目)
+                await appendCard(jijiHand, null, 'card jiji-card', i);
             }
         }
 
-        function createCard(container, txt, className, i, isKaito) {
+        function appendCard(container, word, className, index) {
             return new Promise(resolve => {
                 setTimeout(() => {
                     const c = document.createElement('div');
-                    c.className = className;
-                    c.innerText = txt;
-                    c.style.opacity = '0';
-                    c.style.transform = 'translateY(20px)';
+                    c.className = className + (word ? '' : ' empty-card');
+                    c.innerText = word || '';
+                    // 右側に挿入し続けることで、結果的に左へ伸びていく（右から左へ並ぶ）
                     container.insertBefore(c, container.firstChild);
-                    
-                    if(isKaito) c.onclick = () => playCard(c, true);
-
-                    setTimeout(() => {
-                        c.style.opacity = '1';
-                        c.style.transform = 'translateY(0)';
-                        resolve();
-                    }, 50);
-                }, 150);
+                    resolve();
+                }, 300); // 0.3秒間隔で配る
             });
-        }
-
-        function playCard(cardElem, isKaito) {
-            const center = document.getElementById('center-stage');
-            const newPos = isKaito ? 'played-kaito' : 'played-jiji';
-            
-            // 中央へ移動させる演出（簡易版）
-            cardElem.classList.add(newPos);
-            center.appendChild(cardElem);
-            
-            // もし凱士が出したら、じじも1秒後にランダムで1枚出す演出（ロジック試作）
-            if(isKaito) {
-                setTimeout(() => {
-                    const jCards = document.querySelectorAll('.jiji-card');
-                    if(jCards.length > 0) {
-                        const randomIdx = Math.floor(Math.random() * jCards.length);
-                        const jCard = jCards[randomIdx];
-                        jCard.innerText = "？"; // じじの回答
-                        jCard.classList.add('played-jiji');
-                        center.appendChild(jCard);
-                    }
-                }, 1000);
-            }
         }
     </script>
 </body>
