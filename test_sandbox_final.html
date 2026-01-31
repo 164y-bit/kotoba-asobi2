@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ことばあそび 砂場実験 - Ver 1.38</title>
+    <style>
+        :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
+        
+        html, body { 
+            overflow: hidden; height: 100%; position: fixed; width: 100%;
+            background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; 
+            font-family: "Hiragino Sans", sans-serif;
+        }
+
+        /* Ver 1.37 レイアウト維持（レインボー枠） */
+        #iphone-frame { 
+            width: 375px; height: 812px; background: #fff; position: relative; overflow: hidden;
+            display: flex; flex-direction: column; border-radius: 40px; border: 10px solid transparent;
+            background-image: linear-gradient(#fff, #fff), linear-gradient(to bottom right, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green));
+            background-origin: border-box; background-clip: content-box, border-box; box-sizing: border-box;
+        }
+
+        .area-jiji { flex: 2; background: var(--g-blue); display: flex; flex-direction: column; align-items: center; padding-top: 15px; }
+        .area-mid { flex: 3.5; position: relative; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .area-kaito { flex: 4.5; background: var(--g-yellow); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 10px; position: relative; }
+
+        .icon { width: 75px; height: 75px; border-radius: 50%; border: 3px solid white; background: white; z-index: 50; }
+
+        /* 実験用カード（裏向き） */
+        .card-back {
+            width: 100px; height: 150px;
+            background: repeating-linear-gradient(45deg, #cc0000, #cc0000 10px, #aa0000 10px, #aa0000 20px);
+            border: 5px solid white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        /* --- アニメーション設定 --- */
+        /* A: スロー */
+        .spin-slow { animation: spin 4s linear infinite; }
+        /* E: 遠心力・膨張 */
+        .spin-expand { animation: expand-spin 4s ease-in-out infinite; }
+        /* F: 爆発パルス（グワーングワーン） */
+        .spin-pulse-explode { animation: pulse-explode 5s ease-in-out infinite; }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        @keyframes expand-spin {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(720deg) scale(1.6); filter: blur(2px); }
+        }
+
+        @keyframes pulse-explode {
+            0% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 0px gold); }
+            30% { transform: rotate(360deg) scale(1.4); filter: drop-shadow(0 0 10px gold); }
+            60% { transform: rotate(1440deg) scale(1.1); }
+            90% { transform: rotate(4320deg) scale(2.0); filter: drop-shadow(0 0 30px red); opacity: 0.7; }
+            100% { transform: rotate(5000deg) scale(1); }
+        }
+
+        /* 凱士の手札（Ver 1.37 仕様） */
+        .hand-kaito { display: flex; gap: 8px; justify-content: center; width: 100%; align-items: flex-end; margin-bottom: -15px; z-index: 10; padding: 0 15px; box-sizing: border-box; }
+        .card-main { background: white; border: 2.5px solid #333; border-radius: 12px; width: 105px; height: 215px; writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8rem; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+
+        /* 実験用ボタン */
+        #mode-info { font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #333; background: #eee; padding: 4px 10px; border-radius: 10px; }
+        #change-btn { padding: 12px 24px; background: var(--g-red); color: white; border-radius: 25px; border: none; font-weight: bold; box-shadow: 0 4px #900; active { transform: translateY(2px); box-shadow: none; } }
+    </style>
+</head>
+<body>
+
+    <div id="iphone-frame">
+        <div class="area-jiji">
+            <div class="icon"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=jiji" width="100%"></div>
+        </div>
+
+        <div class="area-mid">
+            <div id="mode-info">現在の実験：A (スロー)</div>
+            <div id="target-card" class="card-back spin-slow"></div>
+            <button id="change-btn" onclick="nextMode()">動きを切り替える！</button>
+        </div>
+
+        <div class="area-kaito">
+            <div class="hand-kaito">
+                <div class="card-main">トイレットペーパー</div>
+                <div class="card-main">ヨーグルト</div>
+                <div class="card-main">りんご</div>
+            </div>
+            <div class="icon"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=kaito" width="100%"></div>
+        </div>
+    </div>
+
+    <script>
+        let current = 0;
+        const modes = [
+            { name: "A (スロー回転)", class: "spin-slow" },
+            { name: "E (遠心力・膨張)", class: "spin-expand" },
+            { name: "F (★爆発パルス！)", class: "spin-pulse-explode" }
+        ];
+
+        function nextMode() {
+            current = (current + 1) % modes.length;
+            const card = document.getElementById('target-card');
+            const info = document.getElementById('mode-info');
+            
+            card.className = 'card-back ' + modes[current].class;
+            info.innerText = '現在の実験：' + modes[current].name;
+        }
+    </script>
+</body>
+</html>
