@@ -3,58 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>砂場実験：バレリーナ・ダンス</title>
+    <title>ことばあそび Ver 1.38 - 20枚ダンス実験場</title>
     <style>
         :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
-        html, body { overflow: hidden; height: 100%; background: #202124; margin: 0; display: flex; justify-content: center; align-family: sans-serif; }
+        html, body { overflow: hidden; height: 100%; position: fixed; width: 100%; background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
 
+        /* 2. Ver 1.37 レイアウトを正確に再現 */
         #iphone-frame { 
             width: 375px; height: 812px; background: #fff; position: relative; overflow: hidden;
             display: flex; flex-direction: column; border-radius: 40px; border: 10px solid transparent;
             background-image: linear-gradient(#fff, #fff), linear-gradient(to bottom right, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green));
             background-origin: border-box; background-clip: content-box, border-box; box-sizing: border-box;
         }
+        .area-jiji { flex: 2; background: var(--g-blue); display: flex; justify-content: center; align-items: center; }
+        .area-mid { flex: 3.5; position: relative; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .area-kaito { flex: 4.5; background: var(--g-yellow); position: relative; }
 
-        .area-mid { flex: 1; position: relative; background: #fff; display: flex; align-items: center; justify-content: center; }
-
-        /* バレリーナたちのダンスホール（回転する親要素） */
-        .dance-floor {
-            position: relative; width: 100px; height: 100px;
-            animation: ballroom-spin 8s linear infinite;
-        }
-
-        /* 共通のカード（バレリーナ）設定：比率を105x215に固定 */
+        /* 3. 小さなバレリーナ（比率は105:215を維持） */
         .ballerina {
-            position: absolute; width: 105px; height: 215px;
-            background: repeating-linear-gradient(45deg, #cc0000, #cc0000 10px, #aa0000 10px, #aa0000 20px);
-            border: 4px solid white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: absolute;
+            width: 42px; height: 86px; /* 本物の40%サイズ */
+            background: repeating-linear-gradient(45deg, #cc0000, #cc0000 5px, #aa0000 5px, #aa0000 10px);
+            border: 2px solid white; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             left: 50%; top: 50%;
-            margin-left: -52.5px; margin-top: -107.5px; /* 中心合わせ */
+            margin-left: -21px; margin-top: -43px;
+            /* 4. ダンスアニメーション：重なりから広がる */
+            animation: dance-move 6s ease-in-out infinite alternate;
         }
 
-        /* 3人のバレリーナを配置（手をつなぐ） */
-        .b1 { transform: rotate(0deg) translateY(-40px); }
-        .b2 { transform: rotate(120deg) translateY(-40px); }
-        .b3 { transform: rotate(240deg) translateY(-40px); }
+        /* 20枚それぞれの回転角度を設定（JavaScriptでやると楽ですが今回はCSSで根性入れました） */
+        .b0  { --rot: 0deg; }   .b1  { --rot: 18deg; }  .b2  { --rot: 36deg; }  .b3  { --rot: 54deg; }
+        .b4  { --rot: 72deg; }  .b5  { --rot: 90deg; }  .b6  { --rot: 108deg; } .b7  { --rot: 126deg; }
+        .b8  { --rot: 144deg; } .b9  { --rot: 162deg; } .b10 { --rot: 180deg; } .b11 { --rot: 198deg; }
+        .b12 { --rot: 216deg; } .b13 { --rot: 234deg; } .b14 { --rot: 252deg; } .b15 { --rot: 270deg; }
+        .b16 { --rot: 288deg; } .b17 { --rot: 306deg; } .b18 { --rot: 324deg; } .b19 { --rot: 342deg; }
 
-        @keyframes ballroom-spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        @keyframes dance-move {
+            0% { transform: rotate(var(--rot)) translateY(0) rotate(0deg); } /* ぐしゃっと中央 */
+            50% { transform: rotate(var(--rot)) translateY(80px) rotate(360deg); } /* 円に広がる */
+            100% { transform: rotate(calc(var(--rot) + 360deg)) translateY(85px) rotate(720deg); } /* 回りながら維持 */
         }
 
-        /* 説明用の文字（邪魔なら後で消します） */
-        .info { position: absolute; bottom: 50px; width: 100%; text-align: center; color: #999; font-size: 12px; }
+        .icon { width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; background: white; z-index: 50; }
+        .jiji-pos { margin-top: 15px; }
+        .kaito-pos { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); }
     </style>
 </head>
-<body onclick="location.reload()"> <div id="iphone-frame">
-        <div class="area-mid">
-            <div class="dance-floor">
-                <div class="ballerina b1"></div>
-                <div class="ballerina b2"></div>
-                <div class="ballerina b3"></div>
-            </div>
+<body onclick="location.reload()">
+
+    <div id="iphone-frame">
+        <div class="area-jiji"><div class="icon jiji-pos"></div></div>
+
+        <div class="area-mid" id="dance-area">
+            <script>
+                const area = document.getElementById('dance-area');
+                for(let i=0; i<20; i++) {
+                    const b = document.createElement('div');
+                    b.className = `ballerina b${i}`;
+                    area.appendChild(b);
+                }
+            </script>
         </div>
-        <div class="info">画面タップでダンスを最初から見る</div>
+
+        <div class="area-kaito"><div class="icon kaito-pos"></div></div>
     </div>
 
 </body>
