@@ -3,63 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ことばあそび Ver 1.34</title>
+    <title>ことばあそび Ver 1.35</title>
     <style>
         :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
         
-        /* 基本設定：スクロール禁止 */
         html, body { 
             overflow: hidden; height: 100%; position: fixed; width: 100%;
             background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; 
-            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
+            font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
         }
 
-        #debug-panel { color: #ccc; font-size: 0.7rem; width: 375px; padding: 10px; z-index: 100; text-align: left; }
+        #debug-panel { color: #ccc; font-size: 0.7rem; width: 375px; padding: 10px; z-index: 100; }
         .hidden { display: none !important; }
 
-        /* iPhone X 縦長シミュレーター */
+        /* iPhone X シミュレーター（内側に緑の枠を追加） */
         #iphone-frame { 
             width: 375px; height: 812px;
             background: #ffffff; position: relative; overflow: hidden;
-            box-shadow: 0 0 30px rgba(0,0,0,0.7);
             display: flex; flex-direction: column;
-            border: 4px solid #444; border-radius: 40px; /* 少し角丸に */
+            /* 緑の太い枠で引き締める */
+            border: 10px solid var(--g-green);
+            box-sizing: border-box;
+            border-radius: 40px;
         }
 
-        /* エリア比率 */
-        .area-jiji { flex: 2; background: var(--g-blue); display: flex; flex-direction: column; align-items: center; padding-top: 15px; }
-        .area-mid { flex: 3.5; position: relative; background: #f9f9f9; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .area-kaito { flex: 4.5; background: var(--g-yellow); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 15px; }
+        .area-jiji { flex: 2; background: var(--g-blue); display: flex; flex-direction: column; align-items: center; padding-top: 15px; position: relative; }
+        .area-mid { flex: 3.5; position: relative; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .area-kaito { flex: 4.5; background: var(--g-yellow); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 10px; position: relative; }
 
-        /* アイコン配置（スワップ後） */
-        .icon { width: 65px; height: 65px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        /* アイコン */
+        .icon { width: 65px; height: 65px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 10; }
 
-        /* 凱士の手札（メイン） */
-        .hand-kaito { display: flex; gap: 8px; justify-content: center; width: 100%; padding: 15px 0; }
-        .card-main { 
-            background: white; border: 2px solid #ddd; border-radius: 15px; 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: 900; color: #333; width: 105px; height: 145px; 
-            font-size: 1.2rem; word-break: break-all; padding: 8px; text-align: center;
-            box-shadow: 0 6px 0 #ccc;
-        }
-
-        /* じじの手札（極小・余白対称） */
+        /* じじの手札（極小） */
         .hand-jiji { display: flex; gap: 5px; justify-content: center; padding: 10px 0; }
-        .card-mini { width: 45px; height: 65px; background: #eee; border: 2px solid white; border-radius: 6px; opacity: 0.9; }
+        .card-mini { width: 45px; height: 65px; background: #eee; border: 1px solid white; border-radius: 4px; }
 
-        /* 中央の出し殻：わざとずらして重ねる */
+        /* 【注目】凱士の手札：縦書き・巨大化 */
+        .hand-kaito { display: flex; gap: 10px; justify-content: center; width: 100%; align-items: flex-end; margin-bottom: -20px; z-index: 5; }
+        .card-main { 
+            background: white; border: 2px solid #333; border-radius: 12px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: 900; color: #333; 
+            /* 縦長に巨大化 */
+            width: 100px; height: 210px; 
+            /* 縦書き設定 */
+            writing-mode: vertical-rl; text-orientation: upright;
+            font-size: 2rem; /* 文字を思い切り大きく */
+            padding: 10px 5px; text-align: center;
+            box-shadow: none; /* 影はなし */
+        }
+
+        /* 中央の出し殻 */
         .played-cards-area { position: relative; width: 120px; height: 160px; margin-bottom: 40px; }
-        .played-card { position: absolute; width: 100px; height: 140px; background: white; border: 1px solid #ccc; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        .card-1 { transform: rotate(-5deg); left: 0; top: 0; background: #fafafa; } /* じじが出したやつ */
-        .card-2 { transform: rotate(3deg); left: 15px; top: 10px; z-index: 2; } /* 凱士が重ねたやつ */
+        .played-card { position: absolute; width: 110px; height: 155px; background: white; border: 1px solid #ccc; border-radius: 10px; }
+        .card-1 { transform: rotate(-5deg); left: -10px; top: 0; background: #f0f0f0; }
+        .card-2 { transform: rotate(3deg); left: 10px; top: 10px; z-index: 2; }
 
-        /* 配る（もう一回）ボタン：中央エリアの下端中央 */
+        /* ボタン：中央エリアの下端 */
         #deal-btn { 
-            position: absolute; bottom: 15px; 
-            padding: 12px 30px; background: var(--g-red); color: white; border-radius: 30px; 
-            font-weight: bold; font-size: 1rem; box-shadow: 0 4px 0 #b22; 
-            cursor: pointer; border: none; z-index: 10;
+            position: absolute; bottom: 10px; 
+            padding: 10px 25px; background: var(--g-red); color: white; border-radius: 20px; 
+            font-weight: bold; font-size: 1.1rem; border: none; z-index: 15;
         }
 
         #qr-area { background: white; padding: 5px; border-radius: 5px; display: inline-block; margin-top: 5px; }
@@ -69,8 +73,8 @@
 
     <div id="debug-panel">
         <div>
-            Ver: 1.34 / Final Stage Draft<br>
-            OFFにする <input id="debug-cb" type="checkbox" onchange="toggleDebug()">
+            Ver: 1.35 / Vertical & Big Card<br>
+            OFF <input id="debug-cb" type="checkbox" onchange="toggleDebug()">
         </div>
         <div id="qr-wrap"><div id="qr-area"></div></div>
     </div>
@@ -79,9 +83,7 @@
         <div class="area-jiji">
             <div class="icon"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=jiji" width="100%"></div>
             <div class="hand-jiji">
-                <div class="card-mini"></div>
-                <div class="card-mini"></div>
-                <div class="card-mini"></div>
+                <div class="card-mini"></div><div class="card-mini"></div><div class="card-mini"></div>
             </div>
         </div>
 
@@ -95,7 +97,7 @@
 
         <div class="area-kaito">
             <div class="hand-kaito">
-                <div class="card-main">トイレット<br>ペーパー</div>
+                <div class="card-main">トイレットペーパー</div>
                 <div class="card-main">ヨーグルト</div>
                 <div class="card-main">りんご</div>
             </div>
