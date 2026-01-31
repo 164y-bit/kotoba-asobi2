@@ -3,130 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ことばあそび Ver 1.37</title>
+    <title>Ver 1.45 - kotoba-asobi2 ステージ設計</title>
     <style>
         :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
-        
-        html, body { 
-            overflow: hidden; height: 100%; position: fixed; width: 100%;
-            background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; 
-            font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
-        }
+        html, body { overflow: hidden; height: 100%; position: fixed; width: 100%; background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; font-family: "Hiragino Sans", sans-serif; }
 
-        #debug-panel { color: #ccc; font-size: 0.7rem; width: 375px; padding: 10px; z-index: 100; }
-        .hidden { display: none !important; }
-
-        /* iPhone X シミュレーター（レインボー枠） */
         #iphone-frame { 
-            width: 375px; height: 812px;
-            background: #ffffff; position: relative; overflow: hidden;
-            display: flex; flex-direction: column;
-            border-radius: 40px;
-            border: 10px solid transparent;
-            background-image: linear-gradient(#fff, #fff), 
-                              linear-gradient(to bottom right, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green));
-            background-origin: border-box;
-            background-clip: content-box, border-box;
-            box-sizing: border-box;
+            width: 375px; height: 812px; background: #fff; position: relative; overflow: hidden;
+            display: flex; flex-direction: column; border-radius: 40px; border: 10px solid transparent;
+            background-image: linear-gradient(#fff, #fff), linear-gradient(to bottom right, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green));
+            background-origin: border-box; background-clip: content-box, border-box; box-sizing: border-box;
         }
 
-        .area-jiji { flex: 2; background: var(--g-blue); display: flex; flex-direction: column; align-items: center; padding-top: 15px; }
-        .area-mid { flex: 3.5; position: relative; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .area-kaito { flex: 4.5; background: var(--g-yellow); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 10px; position: relative; }
+        /* 3層構造：上下の余白を等しくするためのevenly配置 */
+        .area-jiji { flex: 2; background: var(--g-blue); display: flex; flex-direction: column; justify-content: space-evenly; align-items: center; }
+        .area-mid { flex: 3.5; position: relative; background: #fff; display: flex; align-items: center; justify-content: center; }
+        .area-kaito { flex: 4.5; background: var(--g-yellow); display: flex; flex-direction: column; justify-content: space-evenly; align-items: center; }
 
-        .icon { width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 30; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        /* じじ（AI）：最小サイズ 35x72 (比率維持) */
+        .ai-hand { display: flex; gap: 4px; }
+        .mini-card-ai { width: 35px; height: 72px; background: rgba(255,255,255,0.8); border: 1.5px solid #ccc; border-radius: 3px; }
 
-        .hand-jiji { display: flex; gap: 5px; justify-content: center; padding: 10px 0; }
-        .card-mini { width: 45px; height: 65px; background: #eee; border: 1px solid white; border-radius: 4px; }
-
-        /* 凱士の手札：左右の余白を確保するため gap と padding を調整 */
-        .hand-kaito { 
-            display: flex; 
-            gap: 6px; /* 隙間を少し詰める */
-            justify-content: center; 
-            width: 100%; 
-            align-items: flex-end; 
-            margin-bottom: -15px; 
-            z-index: 10; 
-            position: relative; 
-            padding: 0 12px; /* 左右に余白を強制確保 */
-            box-sizing: border-box;
+        /* バレリーナ：中間サイズ 45x92 (Ver 1.41デザイン) */
+        .ballerina {
+            position: absolute; width: 45px; height: 92px; 
+            box-sizing: border-box; border: 3px solid var(--g-yellow); border-radius: 4px;
+            background: conic-gradient(var(--g-red) 45deg, var(--g-green) 45deg 135deg, var(--g-red) 135deg 225deg, var(--g-green) 225deg 315deg, var(--g-red) 315deg);
+            left: 50%; top: 50%; margin-left: -22.5px; margin-top: -46px;
         }
 
-        .card-main { 
-            background: white; border: 2.5px solid #555; border-radius: 12px; 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: 900; color: #333; 
-            width: 105px; height: 215px; /* 少しだけ大きく */
-            writing-mode: vertical-rl; text-orientation: upright;
-            font-size: 1.8rem; padding: 10px 2px; text-align: center;
-            box-sizing: border-box;
+        /* 凱士の手札：最大サイズ (105x215) */
+        .hand-kaito { display: flex; gap: 8px; }
+        .card-main { background: white; border: 3px solid #333; border-radius: 12px; width: 105px; height: 215px; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; font-weight: 900; font-size: 1.5rem; }
+
+        .icon { width: 65px; height: 65px; border-radius: 50%; border: 3px solid white; background: white; }
+
+        /* 「もう一回」ボタン：右下の押しやすい位置 */
+        .btn-retry {
+            position: absolute; right: 15px; bottom: 15px;
+            width: 85px; height: 85px; border-radius: 50%;
+            background: var(--g-red); border: 5px solid var(--g-yellow);
+            color: var(--g-green); font-weight: 900; font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2); z-index: 100;
         }
 
-        /* 状態1：お門違いで飛び出した瞬間（左） */
-        .card-jump { transform: translateY(-40px); z-index: 20; border-color: #555; }
-
-        /* 状態2：戻ってきて赤枠がついた状態（中） - 内側に枠がつくように設定 */
-        .card-red-border { outline: 6px solid var(--g-red); outline-offset: -8px; z-index: 15; }
-
-        .played-cards-area { position: relative; width: 120px; height: 160px; margin-bottom: 40px; }
-        .played-card { position: absolute; width: 110px; height: 155px; background: white; border: 1px solid #ccc; border-radius: 10px; }
-        .card-1 { transform: rotate(-5deg); left: -10px; top: 0; background: #f0f0f0; }
-        .card-2 { transform: rotate(3deg); left: 10px; top: 10px; z-index: 2; }
-
-        #deal-btn { 
-            position: absolute; bottom: 10px; 
-            padding: 10px 25px; background: var(--g-red); color: white; border-radius: 20px; 
-            font-weight: bold; font-size: 1.1rem; border: none; z-index: 40; box-shadow: 0 4px 0 #b22;
-        }
-
-        #qr-area { background: white; padding: 5px; border-radius: 5px; display: inline-block; margin-top: 5px; }
+        #dance-floor { position: relative; width: 10px; height: 10px; animation: ballroom-spin 20s linear infinite; }
+        @keyframes ballroom-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-
-    <div id="debug-panel">
-        <div>
-            Ver: 1.37 / Layout Simulation<br>
-            OFF <input id="debug-cb" type="checkbox" onchange="toggleDebug()">
-        </div>
-        <div id="qr-wrap"><div id="qr-area"></div></div>
-    </div>
-
     <div id="iphone-frame">
         <div class="area-jiji">
-            <div class="icon"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=jiji" width="100%"></div>
-            <div class="hand-jiji">
-                <div class="card-mini"></div><div class="card-mini"></div><div class="card-mini"></div>
+            <div class="icon"></div>
+            <div class="ai-hand">
+                <div class="mini-card-ai"></div><div class="mini-card-ai"></div><div class="mini-card-ai"></div><div class="mini-card-ai"></div>
             </div>
         </div>
-
         <div class="area-mid">
-            <div class="played-cards-area">
-                <div class="played-card card-1"></div>
-                <div class="played-card card-2"></div>
-            </div>
-            <button id="deal-btn">もういっかい！</button>
+            <div id="dance-floor"></div>
+            <div class="btn-retry">もう<br>一回</div>
         </div>
-
         <div class="area-kaito">
             <div class="hand-kaito">
-                <div class="card-main card-jump">トイレットペーパー</div>
-                <div class="card-main card-red-border">ヨーグルト</div>
-                <div class="card-main">りんご</div>
+                <div class="card-main">言葉</div>
+                <div class="card-main">遊び</div>
             </div>
-            <div class="icon"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=kaito" width="100%"></div>
+            <div class="icon"></div>
         </div>
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
-        function toggleDebug() {
-            if(document.getElementById('debug-cb').checked) {
-                document.getElementById('debug-panel').classList.add('hidden');
-            }
+        const floor = document.getElementById('dance-floor');
+        for(let i=0; i<10; i++) {
+            const b = document.createElement('div');
+            b.className = 'ballerina';
+            b.style.transform = `rotate(${i * 36}deg) translateY(-85px)`;
+            floor.appendChild(b);
         }
-        new QRCode(document.getElementById("qr-area"), { text: window.location.href, width: 60, height: 60 });
+        setTimeout(() => {
+            floor.style.transition = "animation-duration 6s linear";
+            floor.style.animationDuration = '3s';
+        }, 500);
     </script>
 </body>
 </html>
