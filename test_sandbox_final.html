@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ことばあそび Ver 1.41 - 速度調整ゲージ砂場</title>
+    <title>ことばあそび Ver 1.42 - 6秒加速ダンス</title>
     <style>
         :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
-        html, body { overflow: hidden; height: 100%; position: fixed; width: 100%; background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
+        html, body { overflow: hidden; height: 100%; position: fixed; width: 100%; background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; }
 
         #iphone-frame { 
             width: 375px; height: 812px; background: #fff; position: relative; overflow: hidden;
@@ -15,31 +15,20 @@
             background-origin: border-box; background-clip: content-box, border-box; box-sizing: border-box;
         }
         .area-jiji { flex: 2; background: var(--g-blue); display: flex; justify-content: center; align-items: center; }
-        .area-mid { flex: 3.5; position: relative; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .area-mid { flex: 3.5; position: relative; background: #fff; display: flex; align-items: center; justify-content: center; }
         .area-kaito { flex: 4.5; background: var(--g-yellow); position: relative; }
 
-        /* ダンスフロア（回転する親要素） */
         #dance-floor {
             position: relative; width: 10px; height: 10px;
-            animation: ballroom-spin 10s linear infinite; /* 初期値10秒 */
+            /* 6秒かけて、遅い回転から速い回転へ遷移 */
+            animation: ballroom-spin 10s linear infinite; 
         }
 
-        /* 確定カードデザイン */
         .ballerina {
-            position: absolute;
-            width: 35px; height: 72px; 
-            box-sizing: border-box;
-            border: 3px solid var(--g-yellow); /* 黄色の縁取り */
-            border-radius: 4px;
-            background: conic-gradient(
-                var(--g-red) 45deg,    /* 上 */
-                var(--g-green) 45deg 135deg,  /* 右 */
-                var(--g-red) 135deg 225deg,  /* 下 */
-                var(--g-green) 225deg 315deg, /* 左 */
-                var(--g-red) 315deg          /* 上に戻る */
-            );
-            left: 50%; top: 50%;
-            margin-left: -17.5px; margin-top: -36px;
+            position: absolute; width: 35px; height: 72px; 
+            box-sizing: border-box; border: 3px solid var(--g-yellow); border-radius: 4px;
+            background: conic-gradient(var(--g-red) 45deg, var(--g-green) 45deg 135deg, var(--g-red) 135deg 225deg, var(--g-green) 225deg 315deg, var(--g-red) 315deg);
+            left: 50%; top: 50%; margin-left: -17.5px; margin-top: -36px;
         }
 
         @keyframes ballroom-spin {
@@ -47,60 +36,46 @@
             to { transform: rotate(360deg); }
         }
 
-        /* 調整ゲージのスタイル */
-        .control-panel {
-            position: absolute; bottom: 20px; width: 80%; left: 10%;
-            background: rgba(255,255,255,0.9); padding: 15px; border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 100; text-align: center;
+        /* 加速の演出用CSSアニメーション */
+        .accelerating {
+            animation: ballroom-spin 10s linear infinite;
+            transition: animation-duration 6s linear; /* 6秒かけて変化 */
         }
-        input[type=range] { width: 100%; cursor: pointer; }
-        .label { font-size: 12px; font-weight: bold; color: #333; margin-bottom: 5px; display: block; }
 
         .icon { width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; background: white; z-index: 50; }
-        .jiji-pos { margin-top: 15px; }
-        .kaito-pos { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); }
+        .label { position: absolute; bottom: 20px; font-size: 12px; color: #999; width: 100%; text-align: center; }
     </style>
 </head>
-<body>
+<body onclick="startDance()">
 
     <div id="iphone-frame">
-        <div class="area-jiji"><div class="icon jiji-pos"></div></div>
-        
+        <div class="area-jiji"><div class="icon" style="margin-top:15px;"></div></div>
         <div class="area-mid">
-            <div id="dance-floor">
-                </div>
-            
-            <div class="control-panel">
-                <span class="label">回転スピード調整（左：遅い / 右：速い）</span>
-                <input type="range" id="speed-slider" min="1" max="20" value="10">
-            </div>
+            <div id="dance-floor" class="accelerating"></div>
+            <div class="label">画面タップで「6秒間の加速」スタート</div>
         </div>
-
-        <div class="area-kaito"><div class="icon kaito-pos"></div></div>
+        <div class="area-kaito"><div class="icon" style="position:absolute; bottom:10px; left:50%; transform:translateX(-50%);"></div></div>
     </div>
 
     <script>
         const floor = document.getElementById('dance-floor');
-        const slider = document.getElementById('speed-slider');
-
-        // 10枚のカードを円状に配置
         for(let i=0; i<10; i++) {
             const b = document.createElement('div');
             b.className = 'ballerina';
-            const angle = i * 36;
-            // 綺麗な円形に広げて配置
-            b.style.transform = `rotate(${angle}deg) translateY(-85px)`;
+            b.style.transform = `rotate(${i * 36}deg) translateY(-85px)`;
             floor.appendChild(b);
         }
 
-        // スライダーでアニメーション速度を変更
-        slider.addEventListener('input', () => {
-            const val = slider.value;
-            // スライダーの値に応じて秒数を変える（反比例）
-            // val=1なら20秒(激遅)、val=20なら1秒(激速)
-            const duration = 21 - val; 
-            floor.style.animationDuration = `${duration}s`;
-        });
+        function startDance() {
+            // 最初はゆったり（20秒で1周）からスタート
+            floor.style.animationDuration = '20s';
+            
+            // 0.1秒後に、6秒かけて最終速度（3秒で1周）へ
+            setTimeout(() => {
+                floor.style.transition = "animation-duration 6s linear";
+                floor.style.animationDuration = '3s';
+            }, 100);
+        }
     </script>
 </body>
 </html>
