@@ -2,72 +2,131 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>test2-3：自前音源テスト Ver1.01</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ことばあそび Ver 1.37</title>
     <style>
-        /* 見た目を「ブルー系」に一新して、更新を確認しやすくしました */
-        body { background: #eef7ff; display: flex; flex-direction: column; align-items: center; padding: 20px; font-family: sans-serif; }
+        :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
         
-        .debug-info { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 8px; width: 90%; margin-bottom: 20px; position: relative; }
-        .ver-tag { position: absolute; top: 10px; right: 10px; background: #e74c3c; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; }
-        
-        #stage { width: 300px; height: 200px; border: 3px solid #3498db; position: relative; margin-bottom: 30px; background: white; border-radius: 15px; }
-        .card { 
-            width: 70px; height: 100px; background: white; border: 2px solid #2980b9; border-radius: 8px; 
-            position: absolute; bottom: -110px; left: 115px; transition: all 0.4s ease-out; 
-            display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #2980b9;
+        html, body { 
+            overflow: hidden; height: 100%; position: fixed; width: 100%;
+            background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; 
+            font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
         }
-        .active { bottom: 50px; transform: scale(1.1) rotate(5deg); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
 
-        .controls { background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; text-align: center; }
-        #play-btn { padding: 15px; font-size: 1.2rem; background: #3498db; color: white; border: none; border-radius: 50px; cursor: pointer; width: 100%; font-weight: bold; }
-        #setup-btn { background: #e67e22; color: white; padding: 15px; border: none; border-radius: 10px; margin-bottom: 20px; cursor: pointer; width: 100%; font-weight: bold; }
+        #debug-panel { color: #ccc; font-size: 0.7rem; width: 375px; padding: 10px; z-index: 100; }
+        .hidden { display: none !important; }
+
+        /* iPhone X シミュレーター（レインボー枠） */
+        #iphone-frame { 
+            width: 375px; height: 812px;
+            background: #ffffff; position: relative; overflow: hidden;
+            display: flex; flex-direction: column;
+            border-radius: 40px;
+            border: 10px solid transparent;
+            background-image: linear-gradient(#fff, #fff), 
+                              linear-gradient(to bottom right, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green));
+            background-origin: border-box;
+            background-clip: content-box, border-box;
+            box-sizing: border-box;
+        }
+
+        .area-jiji { flex: 2; background: var(--g-blue); display: flex; flex-direction: column; align-items: center; padding-top: 15px; }
+        .area-mid { flex: 3.5; position: relative; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .area-kaito { flex: 4.5; background: var(--g-yellow); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 10px; position: relative; }
+
+        .icon { width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 30; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+
+        .hand-jiji { display: flex; gap: 5px; justify-content: center; padding: 10px 0; }
+        .card-mini { width: 45px; height: 65px; background: #eee; border: 1px solid white; border-radius: 4px; }
+
+        /* 凱士の手札：左右の余白を確保するため gap と padding を調整 */
+        .hand-kaito { 
+            display: flex; 
+            gap: 6px; /* 隙間を少し詰める */
+            justify-content: center; 
+            width: 100%; 
+            align-items: flex-end; 
+            margin-bottom: -15px; 
+            z-index: 10; 
+            position: relative; 
+            padding: 0 12px; /* 左右に余白を強制確保 */
+            box-sizing: border-box;
+        }
+
+        .card-main { 
+            background: white; border: 2.5px solid #555; border-radius: 12px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: 900; color: #333; 
+            width: 105px; height: 215px; /* 少しだけ大きく */
+            writing-mode: vertical-rl; text-orientation: upright;
+            font-size: 1.8rem; padding: 10px 2px; text-align: center;
+            box-sizing: border-box;
+        }
+
+        /* 状態1：お門違いで飛び出した瞬間（左） */
+        .card-jump { transform: translateY(-40px); z-index: 20; border-color: #555; }
+
+        /* 状態2：戻ってきて赤枠がついた状態（中） - 内側に枠がつくように設定 */
+        .card-red-border { outline: 6px solid var(--g-red); outline-offset: -8px; z-index: 15; }
+
+        .played-cards-area { position: relative; width: 120px; height: 160px; margin-bottom: 40px; }
+        .played-card { position: absolute; width: 110px; height: 155px; background: white; border: 1px solid #ccc; border-radius: 10px; }
+        .card-1 { transform: rotate(-5deg); left: -10px; top: 0; background: #f0f0f0; }
+        .card-2 { transform: rotate(3deg); left: 10px; top: 10px; z-index: 2; }
+
+        #deal-btn { 
+            position: absolute; bottom: 10px; 
+            padding: 10px 25px; background: var(--g-red); color: white; border-radius: 20px; 
+            font-weight: bold; font-size: 1.1rem; border: none; z-index: 40; box-shadow: 0 4px 0 #b22;
+        }
+
+        #qr-area { background: white; padding: 5px; border-radius: 5px; display: inline-block; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <div class="debug-info">
-        <div class="ver-tag">Ver 1.01</div>
-        <p id="display-filename"><strong>ファイル名:</strong> test2-3.html</p>
-        <p id="display-purpose"><strong>目的:</strong> 自前サーバー内の sounds/card.mp3 を鳴らす。</p>
+    <div id="debug-panel">
+        <div>
+            Ver: 1.37 / Layout Simulation<br>
+            OFF <input id="debug-cb" type="checkbox" onchange="toggleDebug()">
+        </div>
+        <div id="qr-wrap"><div id="qr-area"></div></div>
     </div>
 
-    <button id="setup-btn" onclick="initAudio()">1. 音を読み込む（青色になれば成功）</button>
+    <div id="iphone-frame">
+        <div class="area-jiji">
+            <div class="icon"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=jiji" width="100%"></div>
+            <div class="hand-jiji">
+                <div class="card-mini"></div><div class="card-mini"></div><div class="card-mini"></div>
+            </div>
+        </div>
 
-    <div id="stage"><div id="card" class="card">音</div></div>
+        <div class="area-mid">
+            <div class="played-cards-area">
+                <div class="played-card card-1"></div>
+                <div class="played-card card-2"></div>
+            </div>
+            <button id="deal-btn">もういっかい！</button>
+        </div>
 
-    <div class="controls">
-        <p>GitHub上の `sounds/card.mp3` を使います</p>
-        <button id="play-btn" onclick="playWithSound()">2. カードを出す！</button>
+        <div class="area-kaito">
+            <div class="hand-kaito">
+                <div class="card-main card-jump">トイレットペーパー</div>
+                <div class="card-main card-red-border">ヨーグルト</div>
+                <div class="card-main">りんご</div>
+            </div>
+            <div class="icon"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=kaito" width="100%"></div>
+        </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
-        let audioCtx;
-        // リポジトリ内の sounds フォルダにある card.mp3 を指定
-        const cardSound = new Audio('./sounds/card.mp3'); 
-
-        function initAudio() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            cardSound.load();
-            // iPad対策の空再生
-            cardSound.play().then(() => { 
-                cardSound.pause(); 
-                cardSound.currentTime = 0; 
-                document.getElementById('setup-btn').innerText = "準備完了！";
-                document.getElementById('setup-btn').style.background = "#27ae60";
-            }).catch(e => {
-                alert("まだ音が無いか、URLが違います。");
-            });
-        }
-
-        function playWithSound() {
-            const card = document.getElementById('card');
-            if (!card.classList.contains('active')) {
-                cardSound.currentTime = 0;
-                cardSound.play();
+        function toggleDebug() {
+            if(document.getElementById('debug-cb').checked) {
+                document.getElementById('debug-panel').classList.add('hidden');
             }
-            card.classList.toggle('active');
         }
+        new QRCode(document.getElementById("qr-area"), { text: window.location.href, width: 60, height: 60 });
     </script>
 </body>
 </html>
