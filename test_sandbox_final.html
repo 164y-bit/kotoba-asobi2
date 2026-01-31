@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ことばあそび Ver 1.40 - 十字デザイン・加速スピン</title>
+    <title>ことばあそび Ver 1.41 - 速度調整ゲージ砂場</title>
     <style>
         :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
         html, body { overflow: hidden; height: 100%; position: fixed; width: 100%; background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
@@ -18,53 +18,89 @@
         .area-mid { flex: 3.5; position: relative; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .area-kaito { flex: 4.5; background: var(--g-yellow); position: relative; }
 
-        /* 3. 新・カードデザイン（十字） */
-        .ballerina {
-            position: absolute;
-            width: 35px; height: 72px; /* さらに小さく */
-            background-color: white;
-            /* 上下：赤、左右：緑、白い十字 */
-            background: 
-                linear-gradient(to bottom right, transparent 48%, white 48%, white 52%, transparent 52%),
-                linear-gradient(to top right, transparent 48%, white 48%, white 52%, transparent 52%),
-                conic-gradient(var(--g-red) 45deg, var(--g-green) 45deg 135deg, var(--g-red) 135deg 225deg, var(--g-green) 225deg 315deg, var(--g-red) 315deg);
-            border: 1.5px solid white; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            left: 50%; top: 50%;
-            margin-left: -17.5px; margin-top: -36px;
-            
-            /* 広がってそのまま回り続けるアニメーション */
-            animation: spin-out 5s ease-in forwards infinite;
+        /* ダンスフロア（回転する親要素） */
+        #dance-floor {
+            position: relative; width: 10px; height: 10px;
+            animation: ballroom-spin 10s linear infinite; /* 初期値10秒 */
         }
 
-        @keyframes spin-out {
-            0% { transform: rotate(var(--rot)) translateY(0) rotate(0deg); }
-            30% { transform: rotate(var(--rot)) translateY(75px) rotate(360deg); }
-            /* 100%まで戻らず、回転し続ける */
-            100% { transform: rotate(calc(var(--rot) + 720deg)) translateY(80px) rotate(1440deg); }
+        /* 確定カードデザイン */
+        .ballerina {
+            position: absolute;
+            width: 35px; height: 72px; 
+            box-sizing: border-box;
+            border: 3px solid var(--g-yellow); /* 黄色の縁取り */
+            border-radius: 4px;
+            background: conic-gradient(
+                var(--g-red) 45deg,    /* 上 */
+                var(--g-green) 45deg 135deg,  /* 右 */
+                var(--g-red) 135deg 225deg,  /* 下 */
+                var(--g-green) 225deg 315deg, /* 左 */
+                var(--g-red) 315deg          /* 上に戻る */
+            );
+            left: 50%; top: 50%;
+            margin-left: -17.5px; margin-top: -36px;
         }
+
+        @keyframes ballroom-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 調整ゲージのスタイル */
+        .control-panel {
+            position: absolute; bottom: 20px; width: 80%; left: 10%;
+            background: rgba(255,255,255,0.9); padding: 15px; border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 100; text-align: center;
+        }
+        input[type=range] { width: 100%; cursor: pointer; }
+        .label { font-size: 12px; font-weight: bold; color: #333; margin-bottom: 5px; display: block; }
 
         .icon { width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; background: white; z-index: 50; }
         .jiji-pos { margin-top: 15px; }
         .kaito-pos { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); }
     </style>
 </head>
-<body onclick="location.reload()">
+<body>
 
     <div id="iphone-frame">
         <div class="area-jiji"><div class="icon jiji-pos"></div></div>
-        <div class="area-mid" id="dance-area">
-            <script>
-                const area = document.getElementById('dance-area');
-                for(let i=0; i<10; i++) {
-                    const b = document.createElement('div');
-                    b.className = `ballerina`;
-                    b.style.setProperty('--rot', `${i * 36}deg`);
-                    area.appendChild(b);
-                }
-            </script>
+        
+        <div class="area-mid">
+            <div id="dance-floor">
+                </div>
+            
+            <div class="control-panel">
+                <span class="label">回転スピード調整（左：遅い / 右：速い）</span>
+                <input type="range" id="speed-slider" min="1" max="20" value="10">
+            </div>
         </div>
+
         <div class="area-kaito"><div class="icon kaito-pos"></div></div>
     </div>
 
+    <script>
+        const floor = document.getElementById('dance-floor');
+        const slider = document.getElementById('speed-slider');
+
+        // 10枚のカードを円状に配置
+        for(let i=0; i<10; i++) {
+            const b = document.createElement('div');
+            b.className = 'ballerina';
+            const angle = i * 36;
+            // 綺麗な円形に広げて配置
+            b.style.transform = `rotate(${angle}deg) translateY(-85px)`;
+            floor.appendChild(b);
+        }
+
+        // スライダーでアニメーション速度を変更
+        slider.addEventListener('input', () => {
+            const val = slider.value;
+            // スライダーの値に応じて秒数を変える（反比例）
+            // val=1なら20秒(激遅)、val=20なら1秒(激速)
+            const duration = 21 - val; 
+            floor.style.animationDuration = `${duration}s`;
+        });
+    </script>
 </body>
 </html>
