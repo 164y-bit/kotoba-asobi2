@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ことばあそび Ver 1.35</title>
+    <title>ことばあそび Ver 1.36</title>
     <style>
         :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
         
@@ -16,54 +16,53 @@
         #debug-panel { color: #ccc; font-size: 0.7rem; width: 375px; padding: 10px; z-index: 100; }
         .hidden { display: none !important; }
 
-        /* iPhone X シミュレーター（内側に緑の枠を追加） */
+        /* 【新着】iPhone X シミュレーター（レインボー外枠） */
         #iphone-frame { 
             width: 375px; height: 812px;
             background: #ffffff; position: relative; overflow: hidden;
             display: flex; flex-direction: column;
-            /* 緑の太い枠で引き締める */
-            border: 10px solid var(--g-green);
-            box-sizing: border-box;
             border-radius: 40px;
+            /* レインボー枠の実現 */
+            border: 10px solid transparent;
+            background-image: linear-gradient(#fff, #fff), 
+                              linear-gradient(to bottom right, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green));
+            background-origin: border-box;
+            background-clip: content-box, border-box;
+            box-sizing: border-box;
         }
 
         .area-jiji { flex: 2; background: var(--g-blue); display: flex; flex-direction: column; align-items: center; padding-top: 15px; position: relative; }
         .area-mid { flex: 3.5; position: relative; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .area-kaito { flex: 4.5; background: var(--g-yellow); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 10px; position: relative; }
 
-        /* アイコン */
-        .icon { width: 65px; height: 65px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 10; }
+        /* アイコン：z-indexを上げて最前面へ */
+        .icon { width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 20; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
 
-        /* じじの手札（極小） */
         .hand-jiji { display: flex; gap: 5px; justify-content: center; padding: 10px 0; }
         .card-mini { width: 45px; height: 65px; background: #eee; border: 1px solid white; border-radius: 4px; }
 
-        /* 【注目】凱士の手札：縦書き・巨大化 */
-        .hand-kaito { display: flex; gap: 10px; justify-content: center; width: 100%; align-items: flex-end; margin-bottom: -20px; z-index: 5; }
+        /* 凱士の手札：縦書き・巨大化 */
+        .hand-kaito { display: flex; gap: 10px; justify-content: center; width: 100%; align-items: flex-end; margin-bottom: -15px; z-index: 10; position: relative; }
         .card-main { 
-            background: white; border: 2px solid #333; border-radius: 12px; 
+            background: white; border: 2px solid #555; border-radius: 12px; 
             display: flex; align-items: center; justify-content: center; 
-            font-weight: 900; color: #333; 
-            /* 縦長に巨大化 */
-            width: 100px; height: 210px; 
-            /* 縦書き設定 */
+            font-weight: 900; color: #333; width: 100px; height: 210px; 
             writing-mode: vertical-rl; text-orientation: upright;
-            font-size: 2rem; /* 文字を思い切り大きく */
-            padding: 10px 5px; text-align: center;
-            box-shadow: none; /* 影はなし */
+            font-size: 2rem; padding: 10px 5px; text-align: center;
         }
 
-        /* 中央の出し殻 */
+        /* 【テスト】選択されたカードの強調（赤枠） */
+        .card-selected { border: 6px solid var(--g-red) !important; z-index: 15; transform: translateY(-10px); }
+
         .played-cards-area { position: relative; width: 120px; height: 160px; margin-bottom: 40px; }
         .played-card { position: absolute; width: 110px; height: 155px; background: white; border: 1px solid #ccc; border-radius: 10px; }
         .card-1 { transform: rotate(-5deg); left: -10px; top: 0; background: #f0f0f0; }
         .card-2 { transform: rotate(3deg); left: 10px; top: 10px; z-index: 2; }
 
-        /* ボタン：中央エリアの下端 */
         #deal-btn { 
             position: absolute; bottom: 10px; 
             padding: 10px 25px; background: var(--g-red); color: white; border-radius: 20px; 
-            font-weight: bold; font-size: 1.1rem; border: none; z-index: 15;
+            font-weight: bold; font-size: 1.1rem; border: none; z-index: 25; box-shadow: 0 4px 0 #b22;
         }
 
         #qr-area { background: white; padding: 5px; border-radius: 5px; display: inline-block; margin-top: 5px; }
@@ -73,7 +72,7 @@
 
     <div id="debug-panel">
         <div>
-            Ver: 1.35 / Vertical & Big Card<br>
+            Ver: 1.36 / Rainbow Frame & Selected Test<br>
             OFF <input id="debug-cb" type="checkbox" onchange="toggleDebug()">
         </div>
         <div id="qr-wrap"><div id="qr-area"></div></div>
@@ -98,7 +97,7 @@
         <div class="area-kaito">
             <div class="hand-kaito">
                 <div class="card-main">トイレットペーパー</div>
-                <div class="card-main">ヨーグルト</div>
+                <div class="card-main card-selected">ヨーグルト</div>
                 <div class="card-main">りんご</div>
             </div>
             <div class="icon"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=kaito" width="100%"></div>
