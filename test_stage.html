@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ver 1.46 - kotoba-asobi2 ステージ修復完了</title>
+    <style>
+        :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
+        html, body { overflow: hidden; height: 100%; position: fixed; width: 100%; background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; font-family: "Hiragino Sans", sans-serif; }
+
+        /* ステージ外枠 (Ver 1.37基盤) */
+        #iphone-frame { 
+            width: 375px; height: 812px; background: #fff; position: relative; overflow: hidden;
+            display: flex; flex-direction: column; border-radius: 40px; border: 10px solid transparent;
+            background-image: linear-gradient(#fff, #fff), linear-gradient(to bottom right, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green));
+            background-origin: border-box; background-clip: content-box, border-box; box-sizing: border-box;
+        }
+
+        /* 3層構造の高さ比率 */
+        .area-jiji { flex: 2; background: var(--g-blue); position: relative; }
+        .area-mid { flex: 3.5; background: #fff; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .area-kaito { flex: 4.5; background: var(--g-yellow); position: relative; }
+
+        /* じじエリア（上）：アイコンを上に、極小カードをその下に */
+        .jiji-icon { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); }
+        .ai-hand { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; }
+        .mini-card-ai { width: 30px; height: 62px; background: rgba(255,255,255,0.7); border: 1px solid #ccc; border-radius: 2px; }
+
+        /* 中央エリア（中）：ダンスフロア */
+        #dance-floor { position: relative; width: 10px; height: 10px; animation: ballroom-spin 10s linear infinite; }
+        .ballerina {
+            position: absolute; width: 45px; height: 92px; box-sizing: border-box; 
+            border: 2px solid var(--g-yellow); border-radius: 4px;
+            background: conic-gradient(var(--g-red) 45deg, var(--g-green) 45deg 135deg, var(--g-red) 135deg 225deg, var(--g-green) 225deg 315deg, var(--g-red) 315deg);
+            left: 50%; top: 50%; margin-left: -22.5px; margin-top: -46px;
+        }
+
+        /* 凱士エリア（下）：カードを中央に、アイコンを一番下に */
+        .hand-kaito { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -60%); display: flex; gap: 8px; }
+        .card-main { 
+            background: white; border: 3px solid #333; border-radius: 12px; 
+            width: 105px; height: 215px; /* 縦長比率厳守 */
+            display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; font-weight: 900; font-size: 1.5rem; 
+        }
+        .kaito-icon { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); }
+
+        /* アイコン共通スタイル */
+        .icon { width: 60px; height: 60px; border-radius: 50%; border: 3px solid white; background: white; }
+
+        /* 「もう一回」ボタン：中央エリア右下 */
+        .btn-retry {
+            position: absolute; right: 15px; bottom: 15px; width: 75px; height: 75px; border-radius: 50%;
+            background: var(--g-red); border: 4px solid var(--g-yellow); color: var(--g-green);
+            font-weight: 900; font-size: 14px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 100; cursor: pointer;
+        }
+
+        @keyframes ballroom-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="iphone-frame">
+        <div class="area-jiji">
+            <div class="icon jiji-icon"></div>
+            <div class="ai-hand">
+                <div class="mini-card-ai"></div><div class="mini-card-ai"></div><div class="mini-card-ai"></div><div class="mini-card-ai"></div>
+            </div>
+        </div>
+        
+        <div class="area-mid">
+            <div id="dance-floor"></div>
+            <div class="btn-retry" onclick="location.reload()">もう<br>一回</div>
+        </div>
+
+        <div class="area-kaito">
+            <div class="hand-kaito">
+                <div class="card-main">りんご</div>
+                <div class="card-main">ばなな</div>
+            </div>
+            <div class="icon kaito-icon"></div>
+        </div>
+    </div>
+
+    <script>
+        const floor = document.getElementById('dance-floor');
+        for(let i=0; i<10; i++) {
+            const b = document.createElement('div');
+            b.className = 'ballerina';
+            b.style.transform = `rotate(${i * 36}deg) translateY(-85px)`;
+            floor.appendChild(b);
+        }
+        // 6秒かけて加速する演出
+        setTimeout(() => {
+            floor.style.transition = "animation-duration 6s ease-in";
+            floor.style.animationDuration = '3s';
+        }, 500);
+    </script>
+</body>
+</html>
