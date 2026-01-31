@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ことばあそび Ver1.31</title>
+    <title>ことばあそび Ver 1.33</title>
     <style>
         :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
         
@@ -12,63 +12,13 @@
             background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; 
         }
 
-        /* デバッグパネル（初期ON） */
-        #debug-panel { color: #ccc; font-size: 0.7rem; width: 100%; padding: 10px; z-index: 100; }
+        #debug-panel { color: #ccc; font-size: 0.7rem; width: 100%; padding: 10px; z-index: 100; text-align: left; max-width: 375px; }
         .hidden { display: none !important; }
 
-        #mobile-stage { 
-            width: 100vw; max-width: 375px; height: 100vh; max-height: 812px;
-            background: radial-gradient(circle, #ffffff 0%, #f0f0f0 100%);
-            position: relative; overflow: hidden;
-            border: 8px solid;
-            border-image: linear-gradient(to bottom, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green)) 1;
-        }
-
-        /* じじエリア（青） */
-        .area-jiji { height: 28%; background: var(--g-blue); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 10px; }
-        /* 凱士エリア（黄） */
-        .area-kaito { height: 35%; background: var(--g-yellow); position: absolute; bottom: 0; width: 100%; display: flex; justify-content: space-around; align-items: center; padding-bottom: 20px; }
-        
-        .area-mid { height: 37%; display: flex; align-items: center; justify-content: center; }
-
-        .icon { width: 45px; height: 45px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; transition: transform 0.5s ease; }
-        #jiji-icon { transform: translateY(100px); } /* 初期は下に隠れている */
-        .icon-active { transform: translateY(0) !important; }
-
-        /* 手札のグリッド */
-        .hand-grid { display: flex; gap: 10px; justify-content: center; min-height: 100px; width: 100%; }
-
-        .card { 
-            width: 70px; height: 100px; background: white; border: 2px solid #ddd; border-radius: 8px; 
-            display: flex; align-items: center; justify-content: center; font-size: 2rem; 
-            box-shadow: 2px 2px 10px rgba(0,0,0,0.1); transition: opacity 0.3s ease-out;
-            position: relative;
-        }
-        .jiji-card { width: 40px; height: 60px; font-size: 1rem; background: #ccc; }
-        .empty-card { background: #eee; border: 2px dashed #ccc; color: #bbb; } /* データなし */
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ことばあそび Ver1.33</title>
-    <style>
-        :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
-        
-        /* iPadでの表示を制御：スクロール禁止 */
-        html, body { 
-            overflow: hidden; height: 100%; position: fixed; width: 100%;
-            background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; 
-        }
-
-        /* デバッグパネル */
-        #debug-panel { color: #ccc; font-size: 0.7rem; width: 100%; padding: 10px; z-index: 100; text-align: left; width: 375px; }
-        .hidden { display: none !important; }
-
-        /* --- iPhone X以降をシミュレートするメイン枠 --- */
+        /* iPhone X比率シミュレーター */
         #iphone-frame { 
-            width: 375px; /* iPhone 基準幅 */
-            aspect-ratio: 9 / 19.5; /* iPhone X以降の比率 */
+            width: 375px; 
+            height: 812px; /* iPhone X 高さ基準 */
             background: #ffffff;
             position: relative; overflow: hidden;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
@@ -77,39 +27,29 @@
             border-image: linear-gradient(to bottom, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green)) 1;
         }
 
-        /* じじエリア（20%） */
-        .area-jiji { flex: 2; background: var(--g-blue); display: flex; flex-direction: column; align-items: center; padding-top: 15px; position: relative; }
-        /* 中央エリア（35%） */
+        .area-jiji { flex: 2; background: var(--g-blue); display: flex; flex-direction: column; align-items: center; padding-top: 20px; }
         .area-mid { flex: 3.5; position: relative; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #fff 0%, #f0f0f0 100%); }
-        /* 凱士エリア（45%） */
-        .area-kaito { flex: 4.5; background: var(--g-yellow); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 15px; position: relative; }
+        .area-kaito { flex: 4.5; background: var(--g-yellow); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; }
 
-        /* アイコン：完全に同じサイズと余白 */
-        .icon { width: 60px; height: 60px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 5; }
+        .icon { width: 65px; height: 65px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; }
 
-        /* カードの配置 */
-        .hand-grid { display: flex; gap: 8px; justify-content: center; width: 100%; padding: 10px 0; z-index: 5; }
+        .hand-grid { display: flex; gap: 8px; justify-content: center; width: 100%; padding: 15px 0; }
         
-        /* 単語カードのデザイン */
+        /* 単語カード：指で押しやすいよう少し大きく */
         .card { 
-            background: white; border: 1px solid #ddd; border-radius: 10px; 
+            background: white; border: 1px solid #ddd; border-radius: 12px; 
             display: flex; align-items: center; justify-content: center; 
-            font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            color: #333;
-            /* 3枚並んだ時にiPhone幅に収まるよう調整 */
-            width: 100px; height: 140px; 
-            font-size: 1.1rem; /* 文字サイズ調整のベース */
-            word-break: break-all; padding: 5px; text-align: center;
+            font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            color: #333; width: 105px; height: 145px; 
+            font-size: 1.1rem; word-break: break-all; padding: 5px; text-align: center;
         }
 
-        /* じじの裏向きカード */
-        .jiji-card { width: 50px; height: 70px; background: #fdfdfd url('https://www.transparenttextures.com/patterns/cubes.png'); border: 2px solid white; }
+        .jiji-card { width: 55px; height: 80px; background: #fdfdfd; border: 2px solid white; opacity: 0.8; }
 
-        /* 中央の「配る」ボタン */
         #deal-btn { 
-            position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-            padding: 10px 15px; background: white; border-radius: 12px; font-weight: bold; 
-            font-size: 0.8rem; box-shadow: 0 4px 0 #ddd; cursor: pointer; border: 1px solid #ccc;
+            position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
+            padding: 12px 18px; background: white; border-radius: 15px; font-weight: bold; 
+            font-size: 0.9rem; box-shadow: 0 4px 0 #ddd; cursor: pointer; border: 1px solid #ccc;
         }
 
         #qr-area { background: white; padding: 5px; border-radius: 5px; display: inline-block; margin-top: 5px; }
@@ -126,10 +66,9 @@
     </div>
 
     <div id="iphone-frame">
-        
         <div class="area-jiji">
             <div class="icon"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=jiji" width="100%"></div>
-            <div id="jiji-hand" class="hand-grid">
+            <div class="hand-grid">
                 <div class="card jiji-card"></div>
                 <div class="card jiji-card"></div>
                 <div class="card jiji-card"></div>
@@ -138,18 +77,17 @@
 
         <div class="area-mid">
             <div id="deal-btn">カードを配る</div>
-            <div style="color:#aaa; font-size:0.7rem; margin-left:80px;">中央エリア<br>(ここにしりとりで出す)</div>
+            <div style="color:#aaa; font-size:0.75rem; margin-left:90px; text-align:center;">中央エリア<br>(ここにしりとりで出す)</div>
         </div>
 
         <div class="area-kaito">
-            <div id="kaito-hand" class="hand-grid">
+            <div class="hand-grid">
                 <div class="card">トイレット<br>ペーパー</div>
                 <div class="card">ヨーグルト</div>
                 <div class="card">りんご</div>
             </div>
             <div class="icon"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=kaito" width="100%"></div>
         </div>
-
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -159,88 +97,7 @@
                 document.getElementById('debug-panel').classList.add('hidden');
             }
         }
-        // QRコード生成
         new QRCode(document.getElementById("qr-area"), { text: window.location.href, width: 60, height: 60 });
-    </script>
-</body>
-</html>
-
-        #qr-area { margin-top: 10px; text-align: center; }
-        #deal-btn { cursor: pointer; padding: 5px 10px; background: white; border-radius: 4px; font-weight: bold; }
-    </style>
-</head>
-<body>
-
-    <div id="debug-panel">
-        <p>ファイル名: test5.html / Ver: 1.31 
-           OFFにする <input id="debug-cb" type="checkbox" onchange="toggleDebug()">
-           <span id="deal-btn" onclick="dealCards()">配布開始</span>
-        </p>
-        <div id="qr-area">
-            <img id="qr-img" width="80">
-        </div>
-    </div>
-
-    <div id="mobile-stage">
-        <div class="area-jiji">
-            <div id="jiji-icon" class="icon"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=jiji" width="100%"></div>
-            <div id="jiji-hand" class="hand-grid" style="margin-top:10px;"></div>
-        </div>
-
-        <div class="area-mid"></div>
-
-        <div class="area-kaito">
-            <div id="kaito-hand" class="hand-grid"></div>
-            <div style="position:absolute; bottom:5px;">
-                <div class="icon"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=kaito" width="100%"></div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        function toggleDebug() {
-            const isOff = document.getElementById('debug-cb').checked;
-            if(isOff) {
-                document.getElementById('debug-panel').classList.add('hidden');
-            }
-        }
-
-        // QRコード生成
-        document.getElementById('qr-img').src = "https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=" + encodeURIComponent(window.location.href);
-
-        async function dealCards() {
-            // アイコンを上に移動
-            document.getElementById('jiji-icon').classList.add('icon-active');
-
-            const kaitoHand = document.getElementById('kaito-hand');
-            const jijiHand = document.getElementById('jiji-hand');
-            kaitoHand.innerHTML = '';
-            jijiHand.innerHTML = '';
-
-            const words = ['う', 'に', 'あ']; // 右から配るため、配列を逆にしておく
-            const total = 3;
-
-            // 配布順序: 右(0) -> 中(1) -> 左(2) の順で、凱士とじじを交互に
-            for(let i = 0; i < total; i++) {
-                // 凱士(奇数番目)
-                await appendCard(kaitoHand, words[i], 'card', i);
-                // じじ(偶数番目)
-                await appendCard(jijiHand, null, 'card jiji-card', i);
-            }
-        }
-
-        function appendCard(container, word, className, index) {
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    const c = document.createElement('div');
-                    c.className = className + (word ? '' : ' empty-card');
-                    c.innerText = word || '';
-                    // 右側に挿入し続けることで、結果的に左へ伸びていく（右から左へ並ぶ）
-                    container.insertBefore(c, container.firstChild);
-                    resolve();
-                }, 300); // 0.3秒間隔で配る
-            });
-        }
     </script>
 </body>
 </html>
