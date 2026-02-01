@@ -3,129 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ver 1.00 - レイアウト砂場ツール (The Stage Builder)</title>
+    <title>Ver 1.20 - Stage Builder (Ultimate SandBox)</title>
     <style>
         :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
-        body { background: #202124; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: flex-start; gap: 20px; padding: 20px; margin: 0; }
-
-        /* ステージ外枠 */
+        body { background: #202124; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding-bottom: 50px; }
+        
         #iphone-frame { 
             width: 375px; height: 812px; background: #fff; position: relative; overflow: hidden;
-            border-radius: 40px; border: 10px solid #444; box-sizing: border-box; flex-shrink: 0;
+            border: 8px solid #444; border-radius: 40px; margin-top: 10px;
         }
 
-        /* 3層構造（アタリ） */
-        .area-jiji { position: absolute; top: 0; width: 100%; height: 20%; background: rgba(66, 133, 244, 0.2); border-bottom: 1px dashed var(--g-blue); }
-        .area-mid { position: absolute; top: 20%; width: 100%; height: 35%; background: #fff; }
-        .area-kaito { position: absolute; top: 55%; width: 100%; height: 45%; background: rgba(251, 188, 5, 0.2); border-top: 1px dashed var(--g-yellow); }
+        /* ガイド線 */
+        .guide { position: absolute; background: rgba(255, 0, 0, 0.4); z-index: 100; pointer-events: none; }
+        .guide-x { top: 50%; left: 0; width: 100%; height: 1px; }
+        .guide-y { left: 50%; top: 0; width: 1px; height: 100%; }
 
-        /* 動かすパーツの基本形 */
-        .movable { 
-            position: absolute; border: 2px solid #333; display: flex; align-items: center; 
-            justify-content: center; font-size: 10px; font-weight: bold; cursor: move; 
-            box-sizing: border-box; background: rgba(255,255,255,0.8);
-        }
-        .selected { border: 3px solid var(--g-red) !important; box-shadow: 0 0 15px var(--g-red); z-index: 1000 !important; }
+        .movable { position: absolute; border: 2px solid #333; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; background: rgba(255,255,255,0.7); box-sizing: border-box; text-align: center; }
+        .selected { border: 4px solid var(--g-red) !important; z-index: 1000 !important; box-shadow: 0 0 20px var(--g-red); background: rgba(255, 200, 200, 0.8); }
 
-        /* コントローラー */
-        #controller { width: 300px; background: #333; padding: 20px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; }
-        .control-group { border-bottom: 1px solid #555; padding-bottom: 10px; }
-        .btn-row { display: flex; gap: 5px; margin-top: 5px; }
-        button { flex: 1; padding: 8px; cursor: pointer; background: #555; color: white; border: none; border-radius: 4px; font-weight: bold; }
+        /* 超デカUIコントロールパネル */
+        #ui-panel { width: 375px; background: #333; padding: 20px; box-sizing: border-box; border-radius: 25px 25px 0 0; position: fixed; bottom: 0; z-index: 2000; }
+        .control-row { display: flex; justify-content: space-around; margin-bottom: 15px; }
+        
+        .cross-container { display: grid; grid-template-columns: repeat(3, 70px); grid-template-rows: repeat(3, 60px); gap: 10px; }
+        button { border: none; border-radius: 12px; background: #555; color: white; font-size: 20px; font-weight: bold; cursor: pointer; }
         button:active { background: var(--g-blue); }
-        select { padding: 10px; border-radius: 4px; background: #eee; width: 100%; font-weight: bold; }
-
-        #output { background: #000; color: var(--g-green); padding: 10px; font-family: monospace; font-size: 12px; white-space: pre-wrap; border-radius: 4px; margin-top: 10px; }
-        #msg-small { position: absolute; bottom: 10px; left: 10px; font-size: 12px; color: #666; width: 150px; }
+        .btn-move { background: #666; }
+        .btn-size { background: #444; font-size: 14px; }
+        
+        #part-select { width: 100%; height: 50px; font-size: 20px; border-radius: 10px; margin-bottom: 15px; background: #eee; }
+        #css-out { width: 100%; height: 80px; background: #000; color: #0f0; font-family: monospace; font-size: 10px; overflow-y: auto; padding: 5px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div id="iphone-frame">
-        <div class="area-jiji"></div>
-        <div class="area-mid"></div>
-        <div class="area-kaito"></div>
-
-        <div id="target-jiji-icon" class="movable" style="top: 20px; left: 150px; width: 70px; height: 70px; border-radius: 50%;">じじアイコン</div>
-        <div id="target-jiji-card" class="movable" style="top: 100px; left: 100px; width: 30px; height: 62px;">じじ札</div>
-        <div id="target-main-card" class="movable" style="top: 300px; left: 135px; width: 105px; height: 215px;">正解カード</div>
-        <div id="target-retry-btn" class="movable" style="top: 400px; left: 280px; width: 80px; height: 80px; border-radius: 50%;">もう一回</div>
-        <div id="target-msg-large" class="movable" style="top: 250px; left: 50px; width: 275px; height: 50px;">メッセージ大</div>
-
-        <div id="msg-small">ログ: 準備完了</div>
+        <div class="guide guide-x"></div><div class="guide guide-y"></div>
+        
+        <div id="main-card" class="movable" style="top:300px; left:135px; width:105px; height:215px;">正解札</div>
+        <div id="retry-btn" class="movable" style="top:400px; left:270px; width:80px; height:80px; border-radius:50%;">再試行</div>
+        <div id="dance-area" class="movable" style="top:250px; left:87px; width:200px; height:200px; border:2px dashed var(--g-blue);">演出範囲</div>
+        <div id="msg-large" class="movable" style="top:180px; left:50px; width:275px; height:60px;">メッセージ大</div>
+        <div id="msg-small" class="movable" style="top:700px; left:112px; width:150px; height:40px;">デバッグ小</div>
+        <div id="jiji-icon" class="movable" style="top:20px; left:152px; width:70px; height:70px; border-radius:50%;">じじ顔</div>
+        <div id="jiji-card" class="movable" style="top:100px; left:172px; width:35px; height:65px;">じじ札</div>
     </div>
 
-    <div id="controller">
-        <h3>Stage Builder v1.0</h3>
-        <div class="control-group">
-            <label>対象を選択:</label>
-            <select id="part-selector" onchange="selectPart()">
-                <option value="target-jiji-icon">じじアイコン</option>
-                <option value="target-jiji-card">じじカード</option>
-                <option value="target-main-card">正解カード</option>
-                <option value="target-retry-btn">もう一回ボタン</option>
-                <option value="target-msg-large">メッセージ大</option>
-            </select>
-        </div>
+    <div id="ui-panel">
+        <select id="part-select" onchange="updateSelection()">
+            <option value="main-card">正解カード</option>
+            <option value="retry-btn">もう一回ボタン</option>
+            <option value="dance-area">演出範囲</option>
+            <option value="msg-large">メッセージ大</option>
+            <option value="msg-small">メッセージ小</option>
+            <option value="jiji-icon">じじアイコン</option>
+            <option value="jiji-card">じじカード</option>
+        </select>
 
-        <div class="control-group">
-            <label>位置 (X / Y)</label>
-            <div class="btn-row">
-                <button onclick="move('left', -1)">X-1</button><button onclick="move('left', 1)">X+1</button>
-                <button onclick="move('left', -10)">X-10</button><button onclick="move('left', 10)">X+10</button>
+        <div class="control-row">
+            <div class="cross-container">
+                <div></div><button class="btn-move" onclick="change('top', -1)">↑</button><div></div>
+                <button class="btn-move" onclick="change('left', -1)">←</button><button style="background:var(--g-red)" onclick="exportCSS()">CSS</button><button class="btn-move" onclick="change('left', 1)">→</button>
+                <div></div><button class="btn-move" onclick="change('top', 1)">↓</button><div></div>
             </div>
-            <div class="btn-row">
-                <button onclick="move('top', -1)">Y-1</button><button onclick="move('top', 1)">Y+1</button>
-                <button onclick="move('top', -10)">Y-10</button><button onclick="move('top', 10)">Y+10</button>
-            </div>
-        </div>
-
-        <div class="control-group">
-            <label>サイズ (W / H)</label>
-            <div class="btn-row">
-                <button onclick="move('width', -1)">W-1</button><button onclick="move('width', 1)">W+1</button>
-                <button onclick="move('height', -1)">H-1</button><button onclick="move('height', 1)">H+1</button>
+            <div class="cross-container">
+                <div></div><button class="btn-size" onclick="resize(0, -1)">H小</button><div></div>
+                <button class="btn-size" onclick="resize(-1, 0)">W小</button><button class="btn-size" style="background:var(--g-green)" onclick="resize(1, 1)">全大</button><button class="btn-size" onclick="resize(1, 0)">W大</button>
+                <div></div><button class="btn-size" onclick="resize(0, 1)">H大</button><div></div>
             </div>
         </div>
-
-        <button style="background: var(--g-green);" onclick="exportCSS()">CSS出力を生成</button>
-        <div id="output">ここにコードが出ます</div>
+        <div id="css-out">調整してCSSボタンをタップ！</div>
     </div>
 
     <script>
-        let currentTarget = null;
-
-        function selectPart() {
-            const id = document.getElementById('part-selector').value;
-            if(currentTarget) currentTarget.classList.remove('selected');
-            currentTarget = document.getElementById(id);
-            currentTarget.classList.add('selected');
-            log(`選択中: ${id}`);
+        let target = null;
+        function updateSelection() {
+            if(target) target.classList.remove('selected');
+            target = document.getElementById(document.getElementById('part-select').value);
+            target.classList.add('selected');
         }
-
-        function move(prop, delta) {
-            if(!currentTarget) return;
-            let val = parseInt(currentTarget.style[prop]) || 0;
-            currentTarget.style[prop] = (val + delta) + 'px';
-            log(`${prop}: ${val + delta}px`);
+        function change(prop, delta) {
+            let val = parseInt(target.style[prop]);
+            target.style[prop] = (val + delta) + "px";
         }
-
-        function log(m) {
-            document.getElementById('msg-small').innerText = "ログ: " + m;
+        function resize(dw, dh) {
+            let w = parseInt(target.style.width), h = parseInt(target.style.height);
+            let t = parseInt(target.style.top), l = parseInt(target.style.left);
+            target.style.width = (w + dw*2) + "px";
+            target.style.height = (h + dh*2) + "px";
+            target.style.top = (t - dh) + "px";
+            target.style.left = (l - dw) + "px";
         }
-
         function exportCSS() {
-            const parts = ['target-jiji-icon', 'target-jiji-card', 'target-main-card', 'target-retry-btn', 'target-msg-large'];
-            let css = "/* ジェミナイさん、この数値を反映して！ */\n";
-            parts.forEach(id => {
-                const el = document.getElementById(id);
-                css += `#${id} { left: ${el.style.left}; top: ${el.style.top}; width: ${el.style.width}; height: ${el.style.height}; }\n`;
+            let out = "";
+            const ids = ['main-card','retry-btn','dance-area','msg-large','msg-small','jiji-icon','jiji-card'];
+            ids.forEach(id => {
+                let el = document.getElementById(id);
+                out += `#${id} { left:${el.style.left}; top:${el.style.top}; width:${el.style.width}; height:${el.style.height}; }\n`;
             });
-            document.getElementById('output').innerText = css;
+            document.getElementById('css-out').innerText = out;
         }
-
-        // 初期選択
-        selectPart();
+        updateSelection();
     </script>
 </body>
 </html>
