@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ver 1.30 - Stage Builder (Pro Edition)</title>
+    <title>Ver 1.35 - Stage Builder (Layer Guide Edition)</title>
     <style>
         :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
         body { background: #202124; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; overflow: hidden; height: 100vh; }
@@ -13,73 +13,68 @@
             border: 8px solid #444; border-radius: 40px; margin-top: 10px; flex-shrink: 0;
         }
 
-        .guide { position: absolute; background: rgba(255, 0, 0, 0.4); z-index: 100; pointer-events: none; }
-        .guide-x { top: 50%; left: 0; width: 100%; height: 1px; }
-        .guide-y { left: 50%; top: 0; width: 1px; height: 100%; }
+        /* --- 【最背面レイヤー】3層背景 --- */
+        .bg-layer { position: absolute; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        .bg-jiji { height: 20%; background: var(--g-blue); opacity: 0.3; }
+        .bg-mid { height: 35%; background: #fff; }
+        .bg-kaito { height: 45%; background: var(--g-yellow); opacity: 0.3; }
 
-        .movable { position: absolute; border: 2px solid #333; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; background: rgba(255,255,255,0.7); box-sizing: border-box; text-align: center; color: #000; }
-        .selected { border: 4px solid var(--g-red) !important; z-index: 1000 !important; box-shadow: 0 0 20px var(--g-red); background: rgba(255, 200, 200, 0.8); }
+        /* --- 【背面レイヤー】1.47固定ガイド（パーツ類） --- */
+        /* これらは動かせない「基準」として表示 */
+        .fixed-guide { position: absolute; border: 1px dashed #999; opacity: 0.4; z-index: 10; pointer-events: none; background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; font-size: 10px; color: #666; }
 
-        /* 移動可能なコントロールパネル */
-        #ui-panel { 
-            width: 350px; background: rgba(51, 51, 51, 0.95); padding: 10px; box-sizing: border-box; 
-            border-radius: 20px; position: absolute; bottom: 20px; left: 10px; z-index: 2000;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #666;
-            touch-action: none; /* パネル自体のズーム防止 */
-        }
+        /* --- 【前面レイヤー】新パーツ（操作対象） --- */
+        .movable { position: absolute; border: 2.5px solid #333; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; background: rgba(255,255,255,0.85); box-sizing: border-box; text-align: center; color: #000; z-index: 100; }
+        .selected { border: 4px solid var(--g-red) !important; z-index: 1000 !important; box-shadow: 0 0 20px var(--g-red); background: rgba(255, 200, 200, 0.9); }
+
+        /* 操作パネル（移動可能） */
+        #ui-panel { width: 350px; background: rgba(51, 51, 51, 0.95); padding: 10px; box-sizing: border-box; border-radius: 20px; position: absolute; bottom: 20px; left: 10px; z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #666; touch-action: none; }
         #panel-header { background: #444; padding: 10px; cursor: move; border-radius: 10px; margin-bottom: 10px; text-align: center; font-size: 12px; font-weight: bold; color: #ccc; }
-        
         .control-row { display: flex; justify-content: space-around; margin-bottom: 10px; }
         .cross-container { display: grid; grid-template-columns: repeat(3, 55px); grid-template-rows: repeat(3, 50px); gap: 8px; }
-        
-        /* ボタン：ダブルタップズーム防止 */
-        button { 
-            border: none; border-radius: 10px; background: #666; color: white; font-size: 18px; font-weight: bold; 
-            cursor: pointer; touch-action: manipulation; 
-        }
+        button { border: none; border-radius: 10px; background: #666; color: white; font-size: 18px; font-weight: bold; cursor: pointer; touch-action: manipulation; }
         button:active { background: var(--g-blue); }
-        .btn-move { background: #777; }
-        .btn-size { background: #555; font-size: 14px; }
-        
-        #part-select { width: 100%; height: 45px; font-size: 18px; border-radius: 8px; margin-bottom: 10px; }
         #css-out { width: 100%; height: 60px; background: #000; color: #0f0; font-family: monospace; font-size: 10px; overflow-y: auto; padding: 5px; }
     </style>
 </head>
 <body>
 
     <div id="iphone-frame">
-        <div class="guide guide-x"></div><div class="guide guide-y"></div>
+        <div class="bg-layer">
+            <div class="bg-jiji"></div><div class="bg-mid"></div><div class="bg-kaito"></div>
+        </div>
+
+        <div class="fixed-guide" style="top:20px; left:152px; width:70px; height:70px; border-radius:50%;">じじ顔</div>
+        <div class="fixed-guide" style="top:720px; left:152px; width:70px; height:70px; border-radius:50%;">凱士顔</div>
+        <div class="fixed-guide" style="bottom:20px; left:12px; width:105px; height:215px;">凱士カードL</div>
+        <div class="fixed-guide" style="bottom:20px; left:135px; width:105px; height:215px;">凱士カードC</div>
+        <div class="fixed-guide" style="bottom:20px; left:258px; width:105px; height:215px;">凱士カードR</div>
+
         <div id="main-card" class="movable" style="top:300px; left:135px; width:105px; height:215px;">正解札</div>
         <div id="retry-btn" data-circle="true" class="movable" style="top:400px; left:270px; width:80px; height:80px; border-radius:50%;">再試行</div>
-        <div id="dance-area" class="movable" style="top:250px; left:87px; width:200px; height:200px; border:2px dashed var(--g-blue);">演出範囲</div>
         <div id="msg-large" class="movable" style="top:180px; left:50px; width:275px; height:60px;">メッセージ大</div>
-        <div id="msg-small" class="movable" style="top:700px; left:112px; width:150px; height:40px;">デバッグ小</div>
-        <div id="jiji-icon" data-circle="true" class="movable" style="top:20px; left:152px; width:70px; height:70px; border-radius:50%;">じじ顔</div>
-        <div id="jiji-card" class="movable" style="top:100px; left:172px; width:35px; height:65px;">じじ札</div>
+        <div id="dance-area" class="movable" style="top:250px; left:87px; width:200px; height:200px; border:2px dashed var(--g-blue); background:none;">配布演出範囲</div>
     </div>
 
     <div id="ui-panel">
-        <div id="panel-header">ここをドラッグして移動</div>
-        <select id="part-select" onchange="updateSelection()">
-            <option value="main-card">正解カード</option>
-            <option value="retry-btn">もう一回ボタン(正円)</option>
-            <option value="dance-area">演出範囲</option>
-            <option value="msg-large">メッセージ大</option>
-            <option value="msg-small">メッセージ小</option>
-            <option value="jiji-icon">じじアイコン(正円)</option>
-            <option value="jiji-card">じじカード</option>
+        <div id="panel-header">レイヤー調整モード：ドラッグで移動</div>
+        <select id="part-select" onchange="updateSelection()" style="width:100%; height:45px; font-size:18px; margin-bottom:10px;">
+            <option value="main-card">新：正解カード</option>
+            <option value="retry-btn">新：もう一回ボタン</option>
+            <option value="msg-large">新：メッセージ大</option>
+            <option value="dance-area">新：配布演出範囲</option>
         </select>
 
         <div class="control-row">
             <div class="cross-container">
-                <div></div><button class="btn-move" onclick="change('top', -1)">↑</button><div></div>
-                <button class="btn-move" onclick="change('left', -1)">←</button><button style="background:var(--g-red)" onclick="exportCSS()">CSS</button><button class="btn-move" onclick="change('left', 1)">→</button>
-                <div></div><button class="btn-move" onclick="change('top', 1)">↓</button><div></div>
+                <div></div><button onclick="change('top', -1)">↑</button><div></div>
+                <button onclick="change('left', -1)">←</button><button style="background:var(--g-red)" onclick="exportCSS()">CSS</button><button onclick="change('left', 1)">→</button>
+                <div></div><button onclick="change('top', 1)">↓</button><div></div>
             </div>
             <div class="cross-container">
-                <div></div><button class="btn-size" onclick="resize(0, -1)">H小</button><div></div>
-                <button class="btn-size" onclick="resize(-1, 0)">W小</button><button class="btn-size" style="background:var(--g-green)" onclick="resize(1, 1)">全大</button><button class="btn-size" onclick="resize(1, 0)">W大</button>
-                <div></div><button class="btn-size" onclick="resize(0, 1)">H大</button><div></div>
+                <div></div><button onclick="resize(0, -1)">H小</button><div></div>
+                <button onclick="resize(-1, 0)">W小</button><button style="background:var(--g-green)" onclick="resize(1, 1)">全大</button><button onclick="resize(1, 0)">W大</button>
+                <div></div><button onclick="resize(0, 1)">H大</button><div></div>
             </div>
         </div>
         <div id="css-out">調整してCSSボタンをタップ！</div>
@@ -92,50 +87,29 @@
             target = document.getElementById(document.getElementById('part-select').value);
             target.classList.add('selected');
         }
-        function change(prop, delta) {
-            target.style[prop] = (parseInt(target.style[prop]) + delta) + "px";
-        }
+        function change(p, d) { target.style[p] = (parseInt(target.style[p]) + d) + "px"; }
         function resize(dw, dh) {
-            let isCircle = target.getAttribute('data-circle') === 'true';
-            // 正円モードならdwかdhの大きい方に合わせる
-            if(isCircle) { let delta = (dw !== 0) ? dw : dh; dw = delta; dh = delta; }
-            
-            let w = parseInt(target.style.width), h = parseInt(target.style.height);
-            let t = parseInt(target.style.top), l = parseInt(target.style.left);
-            target.style.width = (w + dw*2) + "px";
-            target.style.height = (h + dh*2) + "px";
-            target.style.top = (t - dh) + "px";
-            target.style.left = (l - dw) + "px";
+            if(target.getAttribute('data-circle')==='true'){ let d=(dw!==0)?dw:dh; dw=d; dh=d; }
+            let w=parseInt(target.style.width), h=parseInt(target.style.height);
+            let t=parseInt(target.style.top), l=parseInt(target.style.left);
+            target.style.width=(w+dw*2)+"px"; target.style.height=(h+dh*2)+"px";
+            target.style.top=(t-dh)+"px"; target.style.left=(l-dw)+"px";
         }
         function exportCSS() {
             let out = "";
-            ['main-card','retry-btn','dance-area','msg-large','msg-small','jiji-icon','jiji-card'].forEach(id => {
+            ['main-card','retry-btn','msg-large','dance-area'].forEach(id => {
                 let el = document.getElementById(id);
                 out += `#${id} { left:${el.style.left}; top:${el.style.top}; width:${el.style.width}; height:${el.style.height}; }\n`;
             });
             document.getElementById('css-out').innerText = out;
         }
 
-        // パネル移動ロジック
-        const panel = document.getElementById('ui-panel');
-        const header = document.getElementById('panel-header');
-        let isDragging = false, startX, startY, initialX, initialY;
-
-        header.addEventListener('touchstart', e => {
-            isDragging = true;
-            startX = e.touches[0].clientX; startY = e.touches[0].clientY;
-            initialX = panel.offsetLeft; initialY = panel.offsetTop;
-        });
-        window.addEventListener('touchmove', e => {
-            if (!isDragging) return;
-            let dx = e.touches[0].clientX - startX;
-            let dy = e.touches[0].clientY - startY;
-            panel.style.left = (initialX + dx) + 'px';
-            panel.style.top = (initialY + dy) + 'px';
-            panel.style.bottom = 'auto';
-        });
-        window.addEventListener('touchend', () => isDragging = false);
-
+        // パネル移動
+        const p = document.getElementById('ui-panel'), h = document.getElementById('panel-header');
+        let isD = false, sX, sY, iX, iY;
+        h.addEventListener('touchstart', e => { isD=true; sX=e.touches[0].clientX; sY=e.touches[0].clientY; iX=p.offsetLeft; iY=p.offsetTop; });
+        window.addEventListener('touchmove', e => { if(!isD) return; p.style.left=(iX+e.touches[0].clientX-sX)+'px'; p.style.top=(iY+e.touches[0].clientY-sY)+'px'; p.style.bottom='auto'; });
+        window.addEventListener('touchend', () => isD=false);
         updateSelection();
     </script>
 </body>
