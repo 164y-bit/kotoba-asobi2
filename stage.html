@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ver 1.47 - kotoba-asobi2 ステージ復旧(1.37ベース)</title>
+    <title>Ver 1.47 - kotoba-asobi2 ステージ復旧完了</title>
     <style>
         :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
         
@@ -13,13 +13,12 @@
             font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
         }
 
-        /* ファイル名と目的を表示するpタグを追加 */
+        /* 画面上でもファイル名と目的を目視確認 */
         #file-info { color: #fff; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; margin: 10px 0; z-index: 200; }
 
         #debug-panel { color: #ccc; font-size: 0.7rem; width: 375px; padding: 10px; z-index: 100; }
         .hidden { display: none !important; }
 
-        /* iPhone X シミュレーター（1.37の黄金レイアウトを継承） */
         #iphone-frame { 
             width: 375px; height: 812px;
             background: #ffffff; position: relative; overflow: hidden;
@@ -51,13 +50,12 @@
             background: white; border: 2.5px solid #555; border-radius: 12px; 
             display: flex; align-items: center; justify-content: center; 
             font-weight: 900; color: #333; 
-            width: 105px; height: 215px; /* 監督の理想サイズ */
+            width: 105px; height: 215px;
             writing-mode: vertical-rl; text-orientation: upright;
             font-size: 1.8rem; padding: 10px 2px; text-align: center;
             box-sizing: border-box;
         }
 
-        /* 1.37の状態再現 */
         .card-jump { transform: translateY(-40px); z-index: 20; border-color: #555; }
         .card-red-border { outline: 6px solid var(--g-red); outline-offset: -8px; z-index: 15; }
 
@@ -77,11 +75,11 @@
 </head>
 <body>
 
-    <p id="file-info">File: stage.html / Ver 1.47 - ステージ土台（復旧版）</p>
+    <p id="file-info">File: stage.html / Ver 1.47 - 1.37完全復旧版</p>
 
     <div id="debug-panel">
         <div>
-            Ver: 1.47 / Layout Check<br>
+            Ver: 1.47 / Layout Simulation<br>
             OFF <input id="debug-cb" type="checkbox" onchange="toggleDebug()">
         </div>
         <div id="qr-wrap"><div id="qr-area"></div></div>
@@ -105,9 +103,9 @@
 
         <div class="area-kaito">
             <div class="hand-kaito">
-                <div class="card-main card-jump">言葉</div>
-                <div class="card-main card-red-border">遊び</div>
-                <div class="card-main">２</div>
+                <div class="card-main card-jump">トイレットペーパー</div>
+                <div class="card-main card-red-border">ヨーグルト</div>
+                <div class="card-main">りんご</div>
             </div>
             <div class="icon"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=kaito" width="100%"></div>
         </div>
