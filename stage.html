@@ -3,60 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1.50 stage.html - カード表示・バレリーナ完全復旧版</title>
+    <title>1.51 stage.html - ことばあそび2</title>
     <style>
-        /* 【絶対遵守】ステージ・レイアウト（Ver 1.37）375x812 */
         :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
-        body { margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        #stage { width: 375px; height: 812px; position: relative; display: flex; flex-direction: column; }
         
-        .area-jiji { flex: 2; background: var(--g-blue); }
-        .area-mid { flex: 3.5; background: #fff; position: relative; display: flex; justify-content: center; align-items: center; }
-        .area-kaito { flex: 4.5; background: var(--g-yellow); }
-
-        /* 【絶対遵守】カードデザイン（Ver 1.41）105:215 */
-        .card {
-            width: 105px; height: 215px; background: #fff; border: 4px solid var(--g-yellow);
-            border-radius: 12px; position: absolute; box-sizing: border-box;
-            background-image: 
-                linear-gradient(45deg, var(--g-red) 25%, transparent 25%, transparent 75%, var(--g-red) 75%),
-                linear-gradient(-45deg, var(--g-red) 25%, transparent 25%, transparent 75%, var(--g-red) 75%),
-                linear-gradient(45deg, transparent 25%, var(--g-green) 25%, var(--g-green) 75%, transparent 75%),
-                linear-gradient(-45deg, transparent 25%, var(--g-green) 25%, var(--g-green) 75%, transparent 75%);
-            background-size: 100% 50%, 100% 50%, 50% 100%, 50% 100%;
-            background-position: 0 0, 0 100%, 0 0, 100% 0;
-            background-repeat: no-repeat;
+        html, body { 
+            overflow: hidden; height: 100%; position: fixed; width: 100%;
+            background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; 
+            font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
         }
 
-        /* バレリーナ演出：10枚のミニカード用 */
-        .mini-card {
-            width: 30px; height: 60px; background: #fff; border: 1.5px solid var(--g-yellow);
-            border-radius: 4px; position: absolute; transform-origin: center;
+        #debug-panel { color: #ccc; font-size: 0.7rem; width: 375px; padding: 10px; z-index: 100; }
+        .hidden { display: none !important; }
+
+        /* iPhone X シミュレーター（レインボー枠） */
+        #iphone-frame { 
+            width: 375px; height: 812px;
+            background: #ffffff; position: relative; overflow: hidden;
+            display: flex; flex-direction: column;
+            border-radius: 40px;
+            border: 10px solid transparent;
+            background-image: linear-gradient(#fff, #fff), 
+                              linear-gradient(to bottom right, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green));
+            background-origin: border-box;
+            background-clip: content-box, border-box;
+            box-sizing: border-box;
         }
 
-        /* アニメーション：6秒かけてゆったりから心地よい速さへ */
-        @keyframes ballet-dance {
-            0% { transform: rotate(0deg) translateX(80px) rotate(0deg); animation-timing-function: ease-in; }
-            100% { transform: rotate(360deg) translateX(80px) rotate(-360deg); }
+        .area-jiji { flex: 2; background: var(--g-blue); display: flex; flex-direction: column; align-items: center; padding-top: 15px; }
+        .area-mid { flex: 3.5; position: relative; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .area-kaito { flex: 4.5; background: var(--g-yellow); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 10px; position: relative; }
+
+        .icon { width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 30; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+
+        .hand-jiji { display: flex; gap: 5px; justify-content: center; padding: 10px 0; }
+        .card-mini { width: 45px; height: 65px; background: #eee; border: 1px solid white; border-radius: 4px; }
+
+        .hand-kaito { 
+            display: flex; 
+            gap: 6px; 
+            justify-content: center; 
+            width: 100%; 
+            align-items: flex-end; 
+            margin-bottom: -15px; 
+            z-index: 10; 
+            position: relative; 
+            padding: 0 12px; 
+            box-sizing: border-box;
         }
+
+        .card-main { 
+            background: white; border: 2.5px solid #555; border-radius: 12px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: 900; color: #333; 
+            width: 105px; height: 215px; 
+            writing-mode: vertical-rl; text-orientation: upright;
+            font-size: 1.8rem; padding: 10px 2px; text-align: center;
+            box-sizing: border-box;
+        }
+
+        .card-jump { transform: translateY(-40px); z-index: 20; border-color: #555; }
+        .card-red-border { outline: 6px solid var(--g-red); outline-offset: -8px; z-index: 15; }
+
+        .played-cards-area { position: relative; width: 120px; height: 160px; margin-bottom: 40px; }
+        .played-card { position: absolute; width: 110px; height: 155px; background: white; border: 1px solid #ccc; border-radius: 10px; }
+        .card-1 { transform: rotate(-5deg); left: -10px; top: 0; background: #f0f0f0; }
+        .card-2 { transform: rotate(3deg); left: 10px; top: 10px; z-index: 2; }
+
+        #deal-btn { 
+            position: absolute; bottom: 10px; 
+            padding: 10px 25px; background: var(--g-red); color: white; border-radius: 20px; 
+            font-weight: bold; font-size: 1.1rem; border: none; z-index: 40; box-shadow: 0 4px 0 #b22;
+        }
+
+        #qr-area { background: white; padding: 5px; border-radius: 5px; display: inline-block; margin-top: 5px; }
     </style>
 </head>
 <body>
-    <div id="stage">
-        <div class="area-jiji"></div>
-        <div class="area-mid" id="ballet-zone">
-            <script>
-                const zone = document.getElementById('ballet-zone');
-                for(let i=0; i<10; i++) {
-                    const card = document.createElement('div');
-                    card.className = 'mini-card';
-                    card.style.animation = `ballet-dance 6s infinite linear`;
-                    card.style.animationDelay = `${i * 0.6}s`;
-                    zone.appendChild(card);
-                }
-            </script>
+
+    <div id="debug-panel">
+        <div>
+            Ver: 1.51 / Layout Simulation<br>
+            OFF <input id="debug-cb" type="checkbox" onchange="toggleDebug()">
         </div>
-        <div class="area-kaito"></div>
+        <div id="qr-wrap"><div id="qr-area"></div></div>
     </div>
+
+    <div id="iphone-frame">
+        <div class="area-jiji">
+            <div class="icon"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=jiji" width="100%"></div>
+            <div class="hand-jiji">
+                <div class="card-mini"></div><div class="card-mini"></div><div class="card-mini"></div>
+            </div>
+        </div>
+
+        <div class="area-mid">
+            <div class="played-cards-area">
+                <div class="played-card card-1"></div>
+                <div class="played-card card-2"></div>
+            </div>
+            <button id="deal-btn">もういっかい！</button>
+        </div>
+
+        <div class="area-kaito">
+            <div class="hand-kaito">
+                <div class="card-main card-jump">トイレットペーパー</div>
+                <div class="card-main card-red-border">ヨーグルト</div>
+                <div class="card-main">りんご</div>
+            </div>
+            <div class="icon"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=kaito" width="100%"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        function toggleDebug() {
+            if(document.getElementById('debug-cb').checked) {
+                document.getElementById('debug-panel').classList.add('hidden');
+            }
+        }
+        new QRCode(document.getElementById("qr-area"), { text: window.location.href, width: 60, height: 60 });
+    </script>
 </body>
 </html>
