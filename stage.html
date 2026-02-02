@@ -3,35 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1.48 stage.html - 外部CSS移行準備・構造整理</title>
+    <title>1.49 stage.html - 構造整理版</title>
     <style>
-        /* 【絶対遵守】ステージ・レイアウト（Ver 1.37）375x812 */
+        /* 【絶対遵守ルール】1.37 / 1.41 デザイン */
         :root { --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; }
-        body { margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; overflow: hidden; }
-        #stage { width: 375px; height: 812px; position: relative; display: flex; flex-direction: column; overflow: hidden; }
-        
-        /* 3層構造 */
+        body { margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        #stage { width: 375px; height: 812px; position: relative; display: flex; flex-direction: column; }
         .area-jiji { flex: 2; background: var(--g-blue); }
         .area-mid { flex: 3.5; background: #fff; position: relative; }
         .area-kaito { flex: 4.5; background: var(--g-yellow); }
 
-        /* 【絶対遵守】カードデザイン（Ver 1.41確定）105:215 */
-        .card-container {
-            position: absolute; width: 105px; height: 215px;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #fff; border: 4px solid var(--g-yellow); border-radius: 12px;
-            box-sizing: border-box; overflow: hidden;
+        /* カードデザイン（1.41） */
+        .card { 
+            width: 105px; height: 215px; background: #fff; border: 4px solid var(--g-yellow); 
+            border-radius: 12px; position: absolute; box-sizing: border-box;
         }
-        /* バレリーナ演出等は1.47のロジックを維持 */
+        /* バレリーナ演出ロジック（1.47継承） */
     </style>
 </head>
 <body>
     <div id="stage">
         <div class="area-jiji"></div>
-        <div class="area-mid">
-            <div class="card-container">
-                </div>
-        </div>
+        <div class="area-mid" id="ballet-zone">
+            </div>
         <div class="area-kaito"></div>
     </div>
 </body>
