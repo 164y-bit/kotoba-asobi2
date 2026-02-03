@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1.56 stage.html - 中央エリア・パーツ配置の最終フィッティング</title>
+    <title>1.57 stage.html - 中央黄金バランスの最終回答</title>
     <style>
         :root { 
             --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; 
@@ -30,11 +30,11 @@
             box-sizing: border-box;
         }
 
-        .area-jiji { flex: 2; background: var(--g-blue); position: relative; z-index: 1; }
-        .area-mid { flex: 3.5; background: #fff; position: relative; z-index: 1; overflow: visible; }
-        .area-kaito { flex: 4.5; background: var(--g-yellow); position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; }
+        .area-jiji { flex: 200; background: var(--g-blue); position: relative; z-index: 1; }
+        .area-mid { flex: 280; background: #fff; position: relative; z-index: 1; }
+        .area-kaito { flex: 332; background: var(--g-yellow); position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; }
 
-        /* じじエリア：1.55確定版 */
+        /* じじエリア */
         .icon-jiji { 
             width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; 
             overflow: hidden; position: absolute; left: 50%; transform: translateX(-50%);
@@ -43,16 +43,7 @@
         .hand-jiji { display: flex; gap: 3px; position: absolute; left: 50%; transform: translateX(-50%); top: 75px; z-index: 10; }
         .card-mini { width: var(--j-card-w); height: var(--j-card-h); background: #eee; border: 1px solid white; border-radius: 3px; }
 
-        /* 中央エリア：1.56新規調整 */
-        .played-card { 
-            position: absolute; left: 50%; transform: translateX(-50%);
-            top: -15px; width: 70px; height: 143px; /* 一回り小さく調整 */
-            background: white; border: 2px solid #555; border-radius: 8px;
-            display: flex; align-items: center; justify-content: center; font-weight: bold;
-            writing-mode: vertical-rl; text-orientation: upright; font-size: 1.2rem; z-index: 5;
-        }
-
-        /* メッセージユニット：中央エリアのライン下に密着 */
+        /* 中央エリア：黄金バランス調整 */
         .mid-msg-unit {
             position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
             width: 90%; display: flex; flex-direction: column; z-index: 5;
@@ -60,30 +51,37 @@
         .msg-large { background: var(--g-green); color: white; padding: 8px 0; font-size: 1.4rem; font-weight: 900; text-align: center; border-radius: 8px 8px 0 0; }
         .msg-debug { background: var(--g-blue); color: white; padding: 4px 0; font-size: 0.8rem; text-align: center; border-radius: 0 0 8px 8px; }
 
-        /* もう一回ボタン：2回り大きく右下へ（レイヤー最上位） */
+        .played-card { 
+            position: absolute; left: 50%; transform: translateX(-50%);
+            /* 計算：(エリア高さ - メッセージ高さ) の半分を中央に */
+            top: 15px; width: 70px; height: 143px; 
+            background: white; border: 2px solid #555; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; font-weight: bold;
+            writing-mode: vertical-rl; text-orientation: upright; font-size: 1.2rem; z-index: 10;
+        }
+
+        /* もう一回ボタン：巨大化とマージン統一(15px) */
         #deal-btn { 
-            position: absolute; right: 10px; bottom: 10px;
-            width: 110px; height: 110px; border-radius: 50%;
+            position: absolute; right: 15px; bottom: 15px;
+            width: 125px; height: 125px; border-radius: 50%;
             background: var(--g-red); color: white; border: 6px solid var(--g-yellow);
-            font-weight: bold; font-size: 1.1rem; z-index: 20;
+            font-weight: bold; font-size: 1.2rem; z-index: 20;
             box-shadow: 0 6px 0 #b22; cursor: pointer;
         }
 
-        /* 凱士エリア：1.51継承 */
+        /* 凱士エリア */
         .hand-kaito { display: flex; gap: 6px; justify-content: center; width: 100%; align-items: flex-end; margin-bottom: -15px; z-index: 10; position: relative; }
         .card-main { background: white; border: 2.5px solid #555; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #333; width: 105px; height: 215px; writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8rem; text-align: center; box-sizing: border-box; }
         .card-jump { transform: translateY(-40px); z-index: 20; }
         .card-red-border { outline: 6px solid var(--g-red); outline-offset: -8px; z-index: 15; }
         .icon-kaito { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 30; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
 
-        /* バレリーナ用ステージ */
-        .ballerina-stage { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 30; pointer-events: none; display: none; }
         #qr-area { background: white; padding: 5px; border-radius: 5px; display: inline-block; margin-top: 5px; }
     </style>
 </head>
 <body>
     <div id="debug-panel">
-        <div>Ver: 1.56 / Mid-Area Finalized<br>OFF <input id="debug-cb" type="checkbox" onchange="toggleDebug()"></div>
+        <div>1.57 / Golden Ratio Final<br>OFF <input id="debug-cb" type="checkbox" onchange="toggleDebug()"></div>
         <div id="qr-wrap"><div id="qr-area"></div></div>
     </div>
     <div id="iphone-frame">
@@ -97,10 +95,9 @@
             <div class="played-card">りんご</div>
             <div class="mid-msg-unit">
                 <div class="msg-large">じじの番だよ</div>
-                <div class="msg-debug">debug: area_check=OK</div>
+                <div class="msg-debug">debug: balance=GOLDEN</div>
             </div>
             <button id="deal-btn">もう一回</button>
-            <div class="ballerina-stage" id="ballerina"></div>
         </div>
         <div class="area-kaito">
             <div class="hand-kaito">
