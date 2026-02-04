@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1.61 test-logic.html - 起動時オート開始と案B移動実装</title>
+    <title>Ver 1.62 - スターターセット実装</title>
     <style>
         :root { 
             --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; 
@@ -17,7 +17,7 @@
             touch-action: manipulation; -webkit-user-select: none; user-select: none;
         }
 
-        /* 黄金バランスのiPhoneフレーム（聖域） */
+        /* 黄金バランスのiPhoneフレーム */
         #iphone-frame { 
             width: 375px; height: 812px; flex-shrink: 0;
             background: #ffffff; position: relative; overflow: hidden;
@@ -29,116 +29,98 @@
             box-sizing: border-box;
         }
 
-        /* --- 内部レイアウト（1.57完全復旧） --- */
-        .area-jiji { flex: 200; background: var(--g-blue); position: relative; z-index: 1; }
-        .area-mid { flex: 280; background: #fff; position: relative; z-index: 1; }
-        .area-kaito { flex: 332; background: var(--g-yellow); position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; }
+        /* 3層構造 */
+        .area-jiji { flex: 200; background: var(--g-blue); position: relative; }
+        .area-mid { flex: 280; background: #fff; position: relative; }
+        .area-kaito { flex: 332; background: var(--g-yellow); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; }
 
-        /* じじエリア */
-        .icon-jiji { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; position: absolute; left: 50%; transform: translateX(-50%); top: 20px; z-index: 20; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        /* じじ：アイコンとミニ手札 */
+        .icon-jiji { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; position: absolute; left: 50%; transform: translateX(-50%); top: 20px; z-index: 20; }
         .hand-jiji { display: flex; gap: 3px; position: absolute; left: 50%; transform: translateX(-50%); top: 75px; z-index: 10; }
         .card-mini { width: var(--j-card-w); height: var(--j-card-h); background: #eee; border: 1px solid white; border-radius: 3px; }
 
-        /* 中央エリア */
+        /* 中央：メッセージとボタン */
         .played-card { position: absolute; left: 50%; transform: translateX(-50%); top: 15px; width: 70px; height: 143px; background: white; border: 2.5px solid #555; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; writing-mode: vertical-rl; text-orientation: upright; font-size: 1.3rem; z-index: 10; }
         .mid-msg-unit { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 90%; display: flex; flex-direction: column; z-index: 5; }
         .msg-large { background: var(--g-green); color: white; padding: 8px 0; font-size: 1.4rem; font-weight: 900; text-align: center; border-radius: 8px 8px 0 0; }
         .msg-debug { background: var(--g-blue); color: white; padding: 4px 0; font-size: 0.8rem; text-align: center; border-radius: 0 0 8px 8px; }
         #deal-btn { position: absolute; right: 15px; bottom: 15px; width: 125px; height: 125px; border-radius: 50%; background: var(--g-red); color: white; border: 6px solid var(--g-yellow); font-weight: bold; font-size: 1.2rem; z-index: 20; box-shadow: 0 6px 0 #b22; cursor: pointer; display: none; }
 
-        /* 凱士エリア */
-        .hand-kaito { display: flex; gap: 6px; justify-content: center; width: 100%; align-items: flex-end; margin-bottom: -15px; z-index: 10; position: relative; }
-        .card-main { background: white; border: 2.5px solid #555; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #333; width: 105px; height: 215px; writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8rem; text-align: center; box-sizing: border-box; cursor: pointer; transition: transform 0.3s; }
-        .icon-kaito { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 30; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        /* 凱士：正解カード1枚とアイコン */
+        .hand-kaito { display: flex; gap: 6px; justify-content: center; width: 100%; align-items: flex-end; margin-bottom: -15px; z-index: 10; }
+        .card-main { background: white; border: 2.5px solid #555; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; width: 105px; height: 215px; writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8rem; box-sizing: border-box; cursor: pointer; }
+        .icon-kaito { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 30; }
 
-        /* 画面外モニタ */
+        /* デバッグモニタ */
         #debug-monitor { width: 180px; height: 780px; margin-left: 20px; padding: 10px; background: rgba(255, 255, 255, 0.1); color: #fff; border-radius: 10px; font-size: 0.7rem; overflow-y: auto; }
         .monitor-item { display: flex; align-items: center; margin-bottom: 4px; padding: 2px 5px; border-radius: 3px; background: rgba(0,0,0,0.3); }
         .flag-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; background: #555; }
-        .flag-on { background: var(--g-red); }
+        .flag-on { background: var(--g-red); box-shadow: 0 0 5px var(--g-red); }
     </style>
 </head>
 <body>
     <div id="iphone-frame">
         <div class="area-jiji">
             <div class="icon-jiji"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=jiji" width="100%"></div>
-            <div class="hand-jiji">
-                <div class="card-mini"></div><div class="card-mini"></div><div class="card-mini"></div>
-            </div>
+            <div class="hand-jiji"><div class="card-mini"></div><div class="card-mini"></div><div class="card-mini"></div></div>
         </div>
         <div class="area-mid">
             <div id="current-card" class="played-card">？</div>
             <div class="mid-msg-unit">
-                <div id="status-msg" class="msg-large">じじの初手...</div>
-                <div id="debug-info" class="msg-debug">Loading...</div>
+                <div id="status-msg" class="msg-large">Loading...</div>
+                <div id="debug-info" class="msg-debug">---</div>
             </div>
-            <button id="deal-btn" onclick="autoStart()">もう一回</button>
+            <button id="deal-btn" onclick="startNewGame()">もう一回</button>
         </div>
         <div class="area-kaito">
-            <div id="kaito-hand" class="hand-kaito">
-                </div>
+            <div id="kaito-hand" class="hand-kaito"></div>
             <div class="icon-kaito"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=kaito" width="100%"></div>
         </div>
     </div>
 
     <div id="debug-monitor">
-        <div style="margin-bottom:10px; font-weight:bold; border-bottom:1px solid #777;">CARD MONITOR</div>
+        <div style="font-weight:bold; border-bottom:1px solid #777; margin-bottom:10px;">FLG CHECK</div>
         <div id="monitor-list"></div>
     </div>
 
     <script>
-        const wordList = [
-            "りんご", "ごりら", "らっぱ", "ぱせり", "りす", "すいか", "かめ", "めだか", 
-            "からす", "すべりだい", "いか", "かさ", "さかな", "なす", "すぽーつ", 
-            "つくえ", "えりまき", "きつね", "ねこ", "こあら", "らくがき", 
-            "きゅうきゅうしゃ", "あひる", "るびー", "いぬ", "ぬいぐるみ", 
-            "みみ", "みず", "すなば", "はとり"
-        ];
-
-        let jijiPointer = 0;
-        let usedFlags = new Array(30).fill(false);
+        const wordList = ["りんご","ごりら","らっぱ","ぱせり","りす","すいか","かめ","めだか","からす","すべりだい","いか","かさ","さかな","なす","すぽーつ","つくえ","えりまき","きつね","ねこ","こあら","らくがき","きゅうきゅうしゃ","あひる","るびー","いぬ","ぬいぐるみ","みみ","みず","すなば","はとり"];
+        
+        let jijiLoopIdx = 0; // 起動・リセットごとに+1される
+        let gameUsedFlags = new Array(30).fill(false);
 
         function init() {
             const list = document.getElementById('monitor-list');
-            list.innerHTML = wordList.map((w, i) => `
-                <div class="monitor-item" id="mon-${i}">
-                    <div class="flag-dot" id="dot-${i}"></div>
-                    <span>${i + 1}. ${w}</span>
-                </div>
-            `).join('');
-            autoStart();
+            list.innerHTML = wordList.map((w, i) => `<div class="monitor-item" id="mon-${i}"><div class="flag-dot" id="dot-${i}"></div><span>${i+1}. ${w}</span></div>`).join('');
+            startNewGame();
         }
 
-        function autoStart() {
-            usedFlags.fill(false);
+        function startNewGame() {
+            gameUsedFlags.fill(false);
             document.getElementById('deal-btn').style.display = 'none';
             
-            // じじの初手
-            const word = wordList[jijiPointer];
-            usedFlags[jijiPointer] = true;
+            // スターターセット発動
+            const startWord = wordList[jijiLoopIdx];
+            gameUsedFlags[jijiLoopIdx] = true; // 初手をフラグON
             
-            document.getElementById('current-card').innerText = word;
+            document.getElementById('current-card').innerText = startWord;
             document.getElementById('status-msg').innerText = "凱士くんの番だよ";
-            document.getElementById('debug-info').innerText = `じじ初手: ${word} (${jijiPointer+1}/30)`;
+            document.getElementById('debug-info').innerText = `初手: ${startWord} (${jijiLoopIdx+1}/30)`;
             
-            updateKaitoHand();
             updateMonitor();
-            
-            jijiPointer = (jijiPointer + 1) % wordList.length;
+            updateKaitoHand(startWord);
+
+            // 次の「もう一回」に備えてポインター更新
+            jijiLoopIdx = (jijiLoopIdx + 1) % 30;
         }
 
-        function updateKaitoHand() {
-            const hand = document.getElementById('kaito-hand');
-            // 次の言葉（正解）を特定
-            let nextIdx = -1;
-            const currentWord = document.getElementById('current-card').innerText;
+        function updateKaitoHand(currentWord) {
             const lastChar = currentWord.slice(-1);
-            
-            // シンプルなしりとりロジックで正解を1枚用意
-            nextIdx = wordList.findIndex((w, i) => !usedFlags[i] && w.startsWith(lastChar));
+            const nextIdx = wordList.findIndex((w, i) => !gameUsedFlags[i] && w.startsWith(lastChar));
+            const hand = document.getElementById('kaito-hand');
             
             if (nextIdx !== -1) {
-                hand.innerHTML = `<div class="card-main" onclick="playKaitoCard(${nextIdx})">${wordList[nextIdx]}</div>`;
+                hand.innerHTML = `<div class="card-main" onclick="playKaito(${nextIdx})">${wordList[nextIdx]}</div>`;
             } else {
                 hand.innerHTML = "";
                 document.getElementById('deal-btn').style.display = 'block';
@@ -146,21 +128,17 @@
             }
         }
 
-        function playKaitoCard(idx) {
-            usedFlags[idx] = true;
+        function playKaito(idx) {
+            gameUsedFlags[idx] = true;
             const word = wordList[idx];
-            
-            // 案B: 中央にカードが重なる（文字更新）
             document.getElementById('current-card').innerText = word;
-            document.getElementById('debug-info').innerText = `凱士が出した: ${word}`;
-            
-            updateKaitoHand();
             updateMonitor();
+            updateKaitoHand(word);
         }
 
         function updateMonitor() {
             wordList.forEach((_, i) => {
-                document.getElementById(`dot-${i}`).className = 'flag-dot' + (usedFlags[i] ? ' flag-on' : '');
+                document.getElementById(`dot-${i}`).className = 'flag-dot' + (gameUsedFlags[i] ? ' flag-on' : '');
             });
         }
 
