@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>1.58 test-logic.html - 30語ループ実装</title>
+    <style>
+        :root { 
+            --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; 
+            --j-card-w: 28px; --j-card-h: 57px;
+        }
+        
+        html, body { 
+            overflow: hidden; height: 100%; position: fixed; width: 100%;
+            background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; 
+            font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+            -webkit-user-select: none; user-select: none;
+        }
+
+        #debug-panel { color: #ccc; font-size: 0.7rem; width: 375px; padding: 10px; z-index: 100; }
+        .hidden { display: none !important; }
+
+        #iphone-frame { 
+            width: 375px; height: 812px;
+            background: #ffffff; position: relative; overflow: hidden;
+            display: flex; flex-direction: column;
+            border-radius: 40px; border: 10px solid transparent;
+            background-image: linear-gradient(#fff, #fff), 
+                              linear-gradient(to bottom right, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green));
+            background-origin: border-box; background-clip: content-box, border-box;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+
+        .area-jiji { flex: 200; background: var(--g-blue); position: relative; z-index: 1; }
+        .area-mid { flex: 280; background: #fff; position: relative; z-index: 1; }
+        .area-kaito { flex: 332; background: var(--g-yellow); position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; }
+
+        .icon-jiji { 
+            width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; 
+            overflow: hidden; position: absolute; left: 50%; transform: translateX(-50%);
+            top: 20px; z-index: 20; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .hand-jiji { display: flex; gap: 3px; position: absolute; left: 50%; transform: translateX(-50%); top: 75px; z-index: 10; }
+        .card-mini { width: var(--j-card-w); height: var(--j-card-h); background: #eee; border: 1px solid white; border-radius: 3px; }
+
+        .mid-msg-unit {
+            position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 90%; display: flex; flex-direction: column; z-index: 5;
+        }
+        .msg-large { background: var(--g-green); color: white; padding: 8px 0; font-size: 1.4rem; font-weight: 900; text-align: center; border-radius: 8px 8px 0 0; }
+        .msg-debug { background: var(--g-blue); color: white; padding: 4px 0; font-size: 0.8rem; text-align: center; border-radius: 0 0 8px 8px; }
+
+        .played-card { 
+            position: absolute; left: 50%; transform: translateX(-50%);
+            top: 15px; width: 70px; height: 143px; 
+            background: white; border: 2.5px solid #555; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; font-weight: bold;
+            writing-mode: vertical-rl; text-orientation: upright; font-size: 1.3rem; z-index: 10;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+        }
+
+        .hand-kaito { display: flex; gap: 6px; justify-content: center; width: 100%; align-items: flex-end; margin-bottom: -15px; z-index: 10; position: relative; opacity: 0.3; }
+        .card-main { background: white; border: 2.5px solid #555; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #333; width: 105px; height: 215px; writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8rem; text-align: center; box-sizing: border-box; }
+        .icon-kaito { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 30; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+
+        #qr-area { background: white; padding: 5px; border-radius: 5px; display: inline-block; margin-top: 5px; }
+    </style>
+</head>
+<body onclick="nextWord()">
+    <div id="debug-panel">
+        <div>1.58 / Loop Test <input id="debug-cb" type="checkbox" onchange="toggleDebug()"></div>
+        <div id="qr-wrap"><div id="qr-area"></div></div>
+    </div>
+    <div id="iphone-frame">
+        <div class="area-jiji">
+            <div class="icon-jiji"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=jiji" width="100%"></div>
+            <div class="hand-jiji">
+                <div class="card-mini"></div><div class="card-mini"></div><div class="card-mini"></div>
+            </div>
+        </div>
+        <div class="area-mid">
+            <div id="current-card" class="played-card">スタート</div>
+            <div class="mid-msg-unit">
+                <div id="status-msg" class="msg-large">画面タップで次へ</div>
+                <div id="debug-info" class="msg-debug">[0/30] 準備完了</div>
+            </div>
+        </div>
+        <div class="area-kaito">
+            <div class="hand-kaito">
+                <div class="card-main">？？？</div>
+            </div>
+            <div class="icon-kaito"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=kaito" width="100%"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        const wordList = [
+            "りんご", "ごりら", "らっぱ", "ぱせり", "りす", "すいか", "かめ", "めだか", 
+            "からす", "すべりだい", "いか", "かさ", "さかな", "なす", "すぽーつ", 
+            "つくえ", "えりまき", "きつね", "ねこ", "こあら", "らくがき", 
+            "きゅうきゅうしゃ", "あひる", "るびー", "いぬ", "ぬいぐるみ", 
+            "みみ", "みず", "すなば", "はとり"
+        ];
+
+        let currentIndex = -1;
+
+        function nextWord() {
+            currentIndex++;
+            if (currentIndex >= wordList.length) {
+                currentIndex = 0; // ループ
+            }
+            
+            const card = document.getElementById('current-card');
+            const debugInfo = document.getElementById('debug-info');
+            const statusMsg = document.getElementById('status-msg');
+
+            card.innerText = wordList[currentIndex];
+            debugInfo.innerText = `[${currentIndex + 1}/${wordList.length}] 次は「${wordList[currentIndex].slice(-1)}」`;
+            statusMsg.innerText = "しりとり中...";
+        }
+
+        function toggleDebug() { 
+            if(document.getElementById('debug-cb').checked) { 
+                document.getElementById('debug-panel').classList.add('hidden'); 
+            } 
+        }
+        new QRCode(document.getElementById("qr-area"), { text: window.location.href, width: 60, height: 60 });
+    </script>
+</body>
+</html>
