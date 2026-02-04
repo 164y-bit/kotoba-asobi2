@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1.58 test-logic.html - 30語ループ実装</title>
+    <title>1.59 test-logic.html - じじ初手ランダム30回実装</title>
     <style>
         :root { 
             --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; 
@@ -14,6 +14,8 @@
             overflow: hidden; height: 100%; position: fixed; width: 100%;
             background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; 
             font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+            /* 原理原則：拡大防止 */
+            touch-action: manipulation;
             -webkit-user-select: none; user-select: none;
         }
 
@@ -29,7 +31,6 @@
                               linear-gradient(to bottom right, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green));
             background-origin: border-box; background-clip: content-box, border-box;
             box-sizing: border-box;
-            cursor: pointer;
         }
 
         .area-jiji { flex: 200; background: var(--g-blue); position: relative; z-index: 1; }
@@ -57,19 +58,26 @@
             background: white; border: 2.5px solid #555; border-radius: 8px;
             display: flex; align-items: center; justify-content: center; font-weight: bold;
             writing-mode: vertical-rl; text-orientation: upright; font-size: 1.3rem; z-index: 10;
-            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
         }
 
-        .hand-kaito { display: flex; gap: 6px; justify-content: center; width: 100%; align-items: flex-end; margin-bottom: -15px; z-index: 10; position: relative; opacity: 0.3; }
+        #deal-btn { 
+            position: absolute; right: 15px; bottom: 15px;
+            width: 125px; height: 125px; border-radius: 50%;
+            background: var(--g-red); color: white; border: 6px solid var(--g-yellow);
+            font-weight: bold; font-size: 1.2rem; z-index: 20;
+            box-shadow: 0 6px 0 #b22; cursor: pointer;
+        }
+
+        .hand-kaito { display: flex; gap: 6px; justify-content: center; width: 100%; align-items: flex-end; margin-bottom: -15px; z-index: 10; position: relative; }
         .card-main { background: white; border: 2.5px solid #555; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #333; width: 105px; height: 215px; writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8rem; text-align: center; box-sizing: border-box; }
         .icon-kaito { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 30; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
 
         #qr-area { background: white; padding: 5px; border-radius: 5px; display: inline-block; margin-top: 5px; }
     </style>
 </head>
-<body onclick="nextWord()">
+<body>
     <div id="debug-panel">
-        <div>1.58 / Loop Test <input id="debug-cb" type="checkbox" onchange="toggleDebug()"></div>
+        <div>1.59 / Jiji Random <input id="debug-cb" type="checkbox" onchange="toggleDebug()"></div>
         <div id="qr-wrap"><div id="qr-area"></div></div>
     </div>
     <div id="iphone-frame">
@@ -80,15 +88,18 @@
             </div>
         </div>
         <div class="area-mid">
-            <div id="current-card" class="played-card">スタート</div>
+            <div id="current-card" class="played-card">？</div>
             <div class="mid-msg-unit">
-                <div id="status-msg" class="msg-large">画面タップで次へ</div>
-                <div id="debug-info" class="msg-debug">[0/30] 準備完了</div>
+                <div id="status-msg" class="msg-large">じじの初手待ち</div>
+                <div id="debug-info" class="msg-debug">もう一回ボタンで開始</div>
             </div>
+            <button id="deal-btn" onclick="jijiFirstMove()">もう一回</button>
         </div>
         <div class="area-kaito">
             <div class="hand-kaito">
-                <div class="card-main">？？？</div>
+                <div class="card-main">？？</div>
+                <div class="card-main">？？</div>
+                <div class="card-main">？？</div>
             </div>
             <div class="icon-kaito"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=kaito" width="100%"></div>
         </div>
@@ -96,7 +107,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
-        const wordList = [
+        const originalList = [
             "りんご", "ごりら", "らっぱ", "ぱせり", "りす", "すいか", "かめ", "めだか", 
             "からす", "すべりだい", "いか", "かさ", "さかな", "なす", "すぽーつ", 
             "つくえ", "えりまき", "きつね", "ねこ", "こあら", "らくがき", 
@@ -104,28 +115,25 @@
             "みみ", "みず", "すなば", "はとり"
         ];
 
-        let currentIndex = -1;
+        let shuffleList = [...originalList].sort(() => Math.random() - 0.5);
+        let currentCount = 0;
 
-        function nextWord() {
-            currentIndex++;
-            if (currentIndex >= wordList.length) {
-                currentIndex = 0; // ループ
+        function jijiFirstMove() {
+            if (currentCount >= 30) {
+                // 30回終わったらリセットして再シャッフル
+                shuffleList = [...originalList].sort(() => Math.random() - 0.5);
+                currentCount = 0;
             }
+
+            const word = shuffleList[currentCount];
+            document.getElementById('current-card').innerText = word;
+            document.getElementById('status-msg').innerText = "凱士くんの番だよ";
+            document.getElementById('debug-info').innerText = `初手[${currentCount + 1}/30]: ${word}`;
             
-            const card = document.getElementById('current-card');
-            const debugInfo = document.getElementById('debug-info');
-            const statusMsg = document.getElementById('status-msg');
-
-            card.innerText = wordList[currentIndex];
-            debugInfo.innerText = `[${currentIndex + 1}/${wordList.length}] 次は「${wordList[currentIndex].slice(-1)}」`;
-            statusMsg.innerText = "しりとり中...";
+            currentCount++;
         }
 
-        function toggleDebug() { 
-            if(document.getElementById('debug-cb').checked) { 
-                document.getElementById('debug-panel').classList.add('hidden'); 
-            } 
-        }
+        function toggleDebug() { if(document.getElementById('debug-cb').checked) document.getElementById('debug-panel').classList.add('hidden'); }
         new QRCode(document.getElementById("qr-area"), { text: window.location.href, width: 60, height: 60 });
     </script>
 </body>
