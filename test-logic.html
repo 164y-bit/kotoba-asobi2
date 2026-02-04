@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1.59 test-logic.html - じじ初手ランダム30回実装</title>
+    <title>1.60 test-logic.html - 循環ループとデバッグモニタ実装</title>
     <style>
         :root { 
             --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; 
@@ -12,18 +12,14 @@
         
         html, body { 
             overflow: hidden; height: 100%; position: fixed; width: 100%;
-            background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; 
+            background: #202124; margin: 0; display: flex; align-items: center; justify-content: center;
             font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
-            /* 原理原則：拡大防止 */
-            touch-action: manipulation;
-            -webkit-user-select: none; user-select: none;
+            touch-action: manipulation; -webkit-user-select: none; user-select: none;
         }
 
-        #debug-panel { color: #ccc; font-size: 0.7rem; width: 375px; padding: 10px; z-index: 100; }
-        .hidden { display: none !important; }
-
+        /* 黄金バランスのiPhoneフレーム（聖域） */
         #iphone-frame { 
-            width: 375px; height: 812px;
+            width: 375px; height: 812px; flex-shrink: 0;
             background: #ffffff; position: relative; overflow: hidden;
             display: flex; flex-direction: column;
             border-radius: 40px; border: 10px solid transparent;
@@ -33,59 +29,43 @@
             box-sizing: border-box;
         }
 
-        .area-jiji { flex: 200; background: var(--g-blue); position: relative; z-index: 1; }
-        .area-mid { flex: 280; background: #fff; position: relative; z-index: 1; }
-        .area-kaito { flex: 332; background: var(--g-yellow); position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; }
+        /* --- 内部レイアウト（原則維持） --- */
+        .area-jiji { flex: 200; background: var(--g-blue); position: relative; }
+        .area-mid { flex: 280; background: #fff; position: relative; }
+        .area-kaito { flex: 332; background: var(--g-yellow); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; }
 
-        .icon-jiji { 
-            width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; 
-            overflow: hidden; position: absolute; left: 50%; transform: translateX(-50%);
-            top: 20px; z-index: 20; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        .hand-jiji { display: flex; gap: 3px; position: absolute; left: 50%; transform: translateX(-50%); top: 75px; z-index: 10; }
-        .card-mini { width: var(--j-card-w); height: var(--j-card-h); background: #eee; border: 1px solid white; border-radius: 3px; }
+        .icon-jiji, .icon-kaito { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; position: absolute; left: 50%; transform: translateX(-50%); box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 30; }
+        .icon-jiji { top: 20px; }
+        .icon-kaito { bottom: 20px; position: relative; transform: none; left: auto; }
 
-        .mid-msg-unit {
-            position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-            width: 90%; display: flex; flex-direction: column; z-index: 5;
+        .played-card { position: absolute; left: 50%; transform: translateX(-50%); top: 15px; width: 70px; height: 143px; background: white; border: 2.5px solid #555; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; writing-mode: vertical-rl; text-orientation: upright; font-size: 1.3rem; z-index: 10; }
+        #deal-btn { position: absolute; right: 15px; bottom: 15px; width: 125px; height: 125px; border-radius: 50%; background: var(--g-red); color: white; border: 6px solid var(--g-yellow); font-weight: bold; font-size: 1.2rem; z-index: 20; box-shadow: 0 6px 0 #b22; cursor: pointer; }
+
+        .hand-kaito { display: flex; gap: 6px; justify-content: center; width: 100%; align-items: flex-end; margin-bottom: -15px; z-index: 10; }
+        .card-main { background: white; border: 2.5px solid #555; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; width: 105px; height: 215px; writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8rem; box-sizing: border-box; }
+
+        /* --- デバッグモニタ（フレーム外に配置） --- */
+        #debug-monitor {
+            width: 180px; height: 780px; margin-left: 20px; padding: 10px;
+            background: rgba(255, 255, 255, 0.1); color: #fff; border-radius: 10px;
+            font-size: 0.7rem; overflow-y: auto;
         }
+        .monitor-item { display: flex; align-items: center; margin-bottom: 4px; padding: 2px 5px; border-radius: 3px; background: rgba(0,0,0,0.3); }
+        .flag-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; background: #555; }
+        .flag-on { background: var(--g-red); box-shadow: 0 0 5px var(--g-red); }
+        .flag-current { background: var(--g-blue); outline: 2px solid white; }
+
         .msg-large { background: var(--g-green); color: white; padding: 8px 0; font-size: 1.4rem; font-weight: 900; text-align: center; border-radius: 8px 8px 0 0; }
         .msg-debug { background: var(--g-blue); color: white; padding: 4px 0; font-size: 0.8rem; text-align: center; border-radius: 0 0 8px 8px; }
+        .mid-msg-unit { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 90%; display: flex; flex-direction: column; z-index: 5; }
 
-        .played-card { 
-            position: absolute; left: 50%; transform: translateX(-50%);
-            top: 15px; width: 70px; height: 143px; 
-            background: white; border: 2.5px solid #555; border-radius: 8px;
-            display: flex; align-items: center; justify-content: center; font-weight: bold;
-            writing-mode: vertical-rl; text-orientation: upright; font-size: 1.3rem; z-index: 10;
-        }
-
-        #deal-btn { 
-            position: absolute; right: 15px; bottom: 15px;
-            width: 125px; height: 125px; border-radius: 50%;
-            background: var(--g-red); color: white; border: 6px solid var(--g-yellow);
-            font-weight: bold; font-size: 1.2rem; z-index: 20;
-            box-shadow: 0 6px 0 #b22; cursor: pointer;
-        }
-
-        .hand-kaito { display: flex; gap: 6px; justify-content: center; width: 100%; align-items: flex-end; margin-bottom: -15px; z-index: 10; position: relative; }
-        .card-main { background: white; border: 2.5px solid #555; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #333; width: 105px; height: 215px; writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8rem; text-align: center; box-sizing: border-box; }
-        .icon-kaito { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 30; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-
-        #qr-area { background: white; padding: 5px; border-radius: 5px; display: inline-block; margin-top: 5px; }
+        @media (max-width: 600px) { #debug-monitor { display: none; } }
     </style>
 </head>
 <body>
-    <div id="debug-panel">
-        <div>1.59 / Jiji Random <input id="debug-cb" type="checkbox" onchange="toggleDebug()"></div>
-        <div id="qr-wrap"><div id="qr-area"></div></div>
-    </div>
     <div id="iphone-frame">
         <div class="area-jiji">
             <div class="icon-jiji"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=jiji" width="100%"></div>
-            <div class="hand-jiji">
-                <div class="card-mini"></div><div class="card-mini"></div><div class="card-mini"></div>
-            </div>
         </div>
         <div class="area-mid">
             <div id="current-card" class="played-card">？</div>
@@ -93,7 +73,7 @@
                 <div id="status-msg" class="msg-large">じじの初手待ち</div>
                 <div id="debug-info" class="msg-debug">もう一回ボタンで開始</div>
             </div>
-            <button id="deal-btn" onclick="jijiFirstMove()">もう一回</button>
+            <button id="deal-btn" onclick="gameStart()">もう一回</button>
         </div>
         <div class="area-kaito">
             <div class="hand-kaito">
@@ -105,9 +85,13 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <div id="debug-monitor">
+        <div style="margin-bottom:10px; font-weight:bold; border-bottom:1px solid #777;">CARD FLAG MONITOR</div>
+        <div id="monitor-list"></div>
+    </div>
+
     <script>
-        const originalList = [
+        const wordList = [
             "りんご", "ごりら", "らっぱ", "ぱせり", "りす", "すいか", "かめ", "めだか", 
             "からす", "すべりだい", "いか", "かさ", "さかな", "なす", "すぽーつ", 
             "つくえ", "えりまき", "きつね", "ねこ", "こあら", "らくがき", 
@@ -115,26 +99,49 @@
             "みみ", "みず", "すなば", "はとり"
         ];
 
-        let shuffleList = [...originalList].sort(() => Math.random() - 0.5);
-        let currentCount = 0;
+        let jijiStartPointer = 0; // 初手の循環用
+        let usedFlags = new Array(30).fill(false); // ゲーム中の重複禁止用
 
-        function jijiFirstMove() {
-            if (currentCount >= 30) {
-                // 30回終わったらリセットして再シャッフル
-                shuffleList = [...originalList].sort(() => Math.random() - 0.5);
-                currentCount = 0;
-            }
-
-            const word = shuffleList[currentCount];
-            document.getElementById('current-card').innerText = word;
-            document.getElementById('status-msg').innerText = "凱士くんの番だよ";
-            document.getElementById('debug-info').innerText = `初手[${currentCount + 1}/30]: ${word}`;
-            
-            currentCount++;
+        // モニタの初期描画
+        function initMonitor() {
+            const list = document.getElementById('monitor-list');
+            list.innerHTML = wordList.map((w, i) => `
+                <div class="monitor-item" id="mon-${i}">
+                    <div class="flag-dot" id="dot-${i}"></div>
+                    <span>${i + 1}. ${w}</span>
+                </div>
+            `).join('');
         }
 
-        function toggleDebug() { if(document.getElementById('debug-cb').checked) document.getElementById('debug-panel').classList.add('hidden'); }
-        new QRCode(document.getElementById("qr-area"), { text: window.location.href, width: 60, height: 60 });
+        function gameStart() {
+            // 1. 全フラグをリセット
+            usedFlags.fill(false);
+            
+            // 2. じじの初手を決定（順番に1つずつずれる）
+            const word = wordList[jijiStartPointer];
+            usedFlags[jijiStartPointer] = true; // 初手を使用済みに
+            
+            // UI反映
+            document.getElementById('current-card').innerText = word;
+            document.getElementById('status-msg').innerText = "凱士くんの番だよ";
+            document.getElementById('debug-info').innerText = `初手[${jijiStartPointer + 1}/30]: ${word}`;
+            
+            updateMonitor(jijiStartPointer);
+
+            // 3. 次回のゲームのためにポインターを進める（30で戻る）
+            jijiStartPointer = (jijiStartPointer + 1) % wordList.length;
+        }
+
+        function updateMonitor(currentIndex) {
+            wordList.forEach((_, i) => {
+                const dot = document.getElementById(`dot-${i}`);
+                const item = document.getElementById(`mon-${i}`);
+                dot.className = 'flag-dot' + (usedFlags[i] ? ' flag-on' : '');
+                item.style.background = (i === currentIndex) ? 'rgba(66, 133, 244, 0.4)' : 'rgba(0,0,0,0.3)';
+            });
+        }
+
+        initMonitor();
     </script>
 </body>
 </html>
