@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0.10 Stage2.html - mainMasterとworkFilesの可視化実装</title>
+    <style>
+        :root {
+            --jiji-blue: #007AFF;
+            --center-white: #FFFFFF;
+            --kaito-yellow: #FFD700;
+            --stage-width: 375px;
+            --stage-height: 812px;
+        }
+
+        body {
+            background-color: #333;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            margin: 0;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        /* --- メインステージ (iPhone枠) --- */
+        #iphone-frame {
+            width: var(--stage-width);
+            height: var(--stage-height);
+            background-color: black;
+            border: 12px solid #222;
+            border-radius: 40px;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .layer {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        #jiji-layer { height: 25%; background-color: var(--jiji-blue); }
+        #center-layer { height: 50%; background-color: var(--center-white); color: black; }
+        #kaito-layer { height: 25%; background-color: var(--kaito-yellow); color: black; }
+
+        /* --- 楽屋 (デバッグエリア) --- */
+        #debug-area {
+            margin-left: 40px;
+            min-width: 450px;
+            background: #222;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #444;
+            height: fit-content;
+        }
+
+        .debug-panel {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #111;
+            border-left: 4px solid var(--jiji-blue);
+        }
+
+        .debug-title {
+            font-size: 0.9em;
+            color: #aaa;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #444;
+            display: inline-block;
+        }
+        .status-active { background: #4cd137; box-shadow: 0 0 8px #4cd137; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.75em; }
+        th, td { border: 1px solid #333; padding: 6px; text-align: left; }
+        .correct { color: #4cd137; font-weight: bold; }
+        .wrong { color: #ff4757; font-weight: bold; }
+        .info-text { color: #007AFF; font-size: 0.8em; margin-top: 5px; }
+
+        #retry-btn {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            background: white;
+            color: black;
+            border-radius: 30px;
+            display: none;
+            cursor: pointer;
+            font-weight: bold;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="iphone-frame">
+        <div id="jiji-layer" class="layer">じじ（青）</div>
+        <div id="center-layer" class="layer">しりとり、はじめよう。<br>じじからどうぞ</div>
+        <div id="kaito-layer" class="layer">凱士（黄）</div>
+        <button id="retry-btn" onclick="app.reset()">もう一回</button>
+    </div>
+
+    <div id="debug-area">
+        <h2 style="margin-top:0;">楽屋 (Stage2 可視化)</h2>
+        
+        <div class="debug-panel">
+            <div class="debug-title">
+                mainMaster (進捗管理)
+                <span id="status-indicator" class="status-dot"></span>
+            </div>
+            <div id="master-view">読み込み中...</div>
+        </div>
+
+        <div class="debug-panel">
+            <div class="debug-title">workFiles: 正解候補 (Top 5 / 30件中)</div>
+            <table id="work-correct-view"></table>
+            <div class="info-text">※昇順で抽出された上位データ</div>
+        </div>
+
+        <div class="debug-panel">
+            <div class="debug-title">workFiles: 不正解候補 (Last 5 / 30件中)</div>
+            <table id="work-wrong-view"></table>
+            <div class="info-text">※昇順で抽出された下位データ</div>
+        </div>
+    </div>
+
+    <script>
+        // --- 30件のマスターデータ (一部抜粋・構造定義) ---
+        const MASTER_DATA = [
+            { id: 1, head: "り", tail: "ん", word: "りんご" },
+            { id: 2, head: "ご", tail: "ら", word: "ごりら" },
+            { id: 3, head: "ら", tail: "ぱ", word: "らっぱ" },
+            { id: 4, head: "ぱ", tail: "だ", word: "ぱんだ" },
+            { id: 5, head: "だ", tail: "い", word: "だいこん" },
+            // ... 中略 ...
+            { id: 26, head: "め", tail: "だ", word: "めだか" },
+            { id: 27, head: "だ", tail: "か", word: "だかり" },
+            { id: 28, head: "す", tail: "い", word: "すいか" },
+            { id: 29, head: "か", tail: "い", word: "かい" },
+            { id: 30, head: "わ", tail: "ん", word: "わん" }
+        ];
+
+        const app = {
+            mainMaster: {
+                status: "READY",
+                turn: 1,
+                init() {
+                    this.status = "ACTIVE (循環中)";
+                    document.getElementById('status-indicator').classList.add('status-active');
+                    this.render();
+                },
+                render() {
+                    document.getElementById('master-view').innerHTML = 
+                        `状態: <strong>${this.status}</strong><br>ターン数: ${this.turn}`;
+                }
+            },
+
+            workFiles: {
+                currentData: [...MASTER_DATA],
+                
+                render() {
+                    const top5 = this.currentData.slice(0, 5);
+                    const last5 = this.currentData.slice(-5);
+
+                    const createTable = (data, isCorrect) => {
+                        return `<tr><th>No.</th><th>頭</th><th>尻</th><th>単語</th></tr>` +
+                            data.map(d => `<tr>
+                                <td>${d.id}</td>
+                                <td>${d.head}</td>
+                                <td>${d.tail}</td>
+                                <td class="${isCorrect ? 'correct' : 'wrong'}">${d.word}</td>
+                            </tr>`).join('');
+                    };
+
+                    document.getElementById('work-correct-view').innerHTML = createTable(top5, true);
+                    document.getElementById('work-wrong-view').innerHTML = createTable(last5, false);
+                }
+            },
+
+            init() {
+                console.log("Stage2 Initialized");
+                this.mainMaster.init();
+                this.workFiles.render();
+
+                // コアロジック：5秒後にリトライボタンを表示
+                setTimeout(() => {
+                    document.getElementById('retry-btn').style.display = 'block';
+                }, 5000);
+            },
+
+            reset() {
+                // 初期化ロジック (コア部分のみ)
+                console.log("Retry Clicked");
+                location.reload();
+            }
+        };
+
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>
