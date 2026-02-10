@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>0.11 Stage2.html - 30件フルデータとmainMaster可視化の完遂</title>
+    <style>
+        :root { --jiji-blue: #007AFF; --center-white: #FFFFFF; --kaito-yellow: #FFD700; }
+        body { background-color: #1a1a1a; color: white; font-family: monospace; display: flex; margin: 0; padding: 10px; }
+        #iphone-frame { width: 375px; height: 812px; background: black; border-radius: 40px; position: relative; overflow: hidden; flex-shrink: 0; border: 8px solid #333; }
+        .layer { width: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; text-align: center; }
+        #jiji-layer { height: 25%; background: var(--jiji-blue); }
+        #center-layer { height: 50%; background: var(--center-white); color: black; padding: 20px; box-sizing: border-box; }
+        #kaito-layer { height: 25%; background: var(--kaito-yellow); color: black; }
+        #debug-area { margin-left: 15px; flex-grow: 1; font-size: 11px; }
+        .panel { background: #222; border: 1px solid #444; margin-bottom: 8px; padding: 8px; }
+        .panel-title { color: var(--jiji-blue); font-weight: bold; border-bottom: 1px solid #444; margin-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #333; padding: 2px 4px; text-align: left; }
+        .correct { color: #4cd137; }
+        #retry-btn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 12px 24px; border-radius: 20px; display: none; }
+    </style>
+</head>
+<body>
+    <div id="iphone-frame">
+        <div id="jiji-layer" class="layer">じじ（青）</div>
+        <div id="center-layer" class="layer">30件完走テスト準備完了。<br>タイトルと楽屋を確認してください。</div>
+        <div id="kaito-layer" class="layer">凱士（黄）</div>
+        <button id="retry-btn" onclick="location.reload()">もう一回</button>
+    </div>
+    <div id="debug-area">
+        <div class="panel">
+            <div class="panel-title">① 進捗 (mainMaster)</div>
+            <div id="master-view"></div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">② 正解候補 (Top5)</div>
+            <table id="top-table"></table>
+        </div>
+        <div class="panel">
+            <div class="panel-title">③ 不正解候補 (Last5)</div>
+            <table id="last-table"></table>
+        </div>
+    </div>
+    <script>
+        const MASTER_DATA = [
+            {id:1, head:"り", tail:"ん", word:"りんご"}, {id:2, head:"ご", tail:"ら", word:"ごりら"}, {id:3, head:"ら", tail:"ぱ", word:"らっぱ"},
+            {id:4, head:"ぱ", tail:"だ", word:"ぱんだ"}, {id:5, head:"だ", tail:"い", word:"だいこん"}, {id:6, head:"こ", tail:"ん", word:"こんぶ"},
+            {id:7, head:"ぶ", tail:"た", word:"ぶた"}, {id:8, head:"た", tail:"ぬ", word:"たぬき"}, {id:9, head:"き", tail:"つ", word:"きつね"},
+            {id:10, head:"ね", tail:"こ", word:"ねこ"}, {id:11, head:"こ", tail:"ま", word:"こま"}, {id:12, head:"ま", tail:"と", word:"まと"},
+            {id:13, head:"と", tail:"ら", word:"とら"}, {id:14, head:"ら", tail:"い", word:"らいおん"}, {id:15, head:"お", tail:"ん", word:"おんぷ"},
+            {id:16, head:"ぷ", tail:"ら", word:"ぷらむ"}, {id:17, head:"む", tail:"し", word:"むし"}, {id:18, head:"し", tail:"か", word:"しか"},
+            {id:19, head:"か", tail:"め", word:"かめ"}, {id:20, head:"め", tail:"だ", word:"めだか"}, {id:21, head:"か", tail:"き", word:"かき"},
+            {id:22, head:"き", tail:"く", word:"きく"}, {id:23, head:"く", tail:"ま", word:"くま"}, {id:24, head:"ま", tail:"め", word:"まめ"},
+            {id:25, head:"め", tail:"し", word:"めし"}, {id:26, head:"し", tail:"お", word:"しお"}, {id:27, head:"お", tail:"か", word:"おか"},
+            {id:28, head:"か", tail:"さ", word:"かさ"}, {id:29, head:"さ", tail:"る", word:"さる"}, {id:30, head:"わ", tail:"ん", word:"わん"}
+        ];
+        const app = {
+            mainMaster: { status: "ACTIVE", turn: 1, render() { document.getElementById('master-view').innerHTML = `状態: ${this.status} / Turn: ${this.turn}`; } },
+            workFiles: {
+                data: MASTER_DATA,
+                render() {
+                    const row = d => `<tr><td>${d.id}</td><td>${d.head}</td><td>${d.tail}</td><td class="correct">${d.word}</td></tr>`;
+                    document.getElementById('top-table').innerHTML = this.data.slice(0, 5).map(row).join('');
+                    document.getElementById('last-table').innerHTML = this.data.slice(-5).map(row).join('');
+                }
+            },
+            init() { this.mainMaster.render(); this.workFiles.render(); setTimeout(() => document.getElementById('retry-btn').style.display='block', 5000); }
+        };
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>
