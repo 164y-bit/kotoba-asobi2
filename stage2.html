@@ -2,117 +2,123 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>1.38 stage.html - 30件データと拡張デバッグツールの統合</title>
+    <title>1.58 stage.html - 30件データと拡張デバッグツールの統合</title>
     <style>
+        /* --- 1.57 ビジュアル完全継承 --- */
         :root {
             --jiji-blue: #007AFF;
             --center-white: #FFFFFF;
             --kaito-yellow: #FFD700;
+            --card-edge: #FFD700; /* 黄色の縁取り */
         }
-        body { background-color: #1a1a1a; color: white; font-family: sans-serif; display: flex; margin: 0; padding: 20px; overflow-x: auto; }
-        
-        /* iPhone Stage (Ver 1.37基盤) */
-        #iphone-frame {
-            width: 375px; height: 812px; background: black; border-radius: 40px;
-            position: relative; overflow: hidden; flex-shrink: 0; border: 8px solid #333;
+        body { 
+            background: linear-gradient(135deg, #2c3e50, #000); 
+            color: white; font-family: sans-serif; 
+            display: flex; justify-content: flex-start; align-items: center;
+            margin: 0; padding: 20px; height: 100vh; overflow-x: auto;
         }
-        .layer { width: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        #jiji-layer { height: 25%; background: var(--jiji-blue); }
-        #center-layer { height: 50%; background: var(--center-white); color: black; padding: 20px; box-sizing: border-box; text-align: center; }
-        #kaito-layer { height: 25%; background: var(--kaito-yellow); color: black; }
 
-        /* 楽屋 (Debug Tool) - iPhoneの外側に配置 */
-        #debug-area { margin-left: 30px; min-width: 400px; display: none; font-family: monospace; }
-        .panel { background: #222; border-left: 4px solid var(--jiji-blue); margin-bottom: 15px; padding: 10px; }
-        .panel-title { font-size: 14px; font-weight: bold; margin-bottom: 8px; color: var(--jiji-blue); }
+        /* iPhone X/13形式 (375x812) */
+        #stage {
+            width: 375px; height: 812px; background: black; border-radius: 40px;
+            position: relative; overflow: hidden; flex-shrink: 0;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8); border: 10px solid #333;
+        }
+        .layer { width: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; position: relative; }
+        #jiji-area { height: 25%; background: var(--jiji-blue); }
+        #center-area { height: 50%; background: var(--center-white); color: black; }
+        #kaito-area { height: 25%; background: var(--kaito-yellow); color: black; }
+
+        /* カードデザイン (105:215) */
+        .card-back {
+            width: 105px; height: 215px; border: 4px solid var(--card-edge);
+            background: white; border-radius: 8px; position: relative;
+        }
+
+        /* --- 楽屋（右側スペース） --- */
+        #debug-log {
+            margin-left: 40px; height: 812px; min-width: 450px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .debug-panel { 
+            background: rgba(0,0,0,0.7); border: 1px solid #444; 
+            padding: 10px; border-radius: 10px; font-family: monospace;
+        }
+        .panel-title { color: var(--jiji-blue); font-size: 14px; margin-bottom: 5px; font-weight: bold; display: flex; justify-content: space-between; }
+        .debug-switch { color: #888; cursor: pointer; text-decoration: underline; font-size: 10px; }
         
-        table { width: 100%; border-collapse: collapse; font-size: 10px; } /* 極限までフォントを下げて網羅 */
-        th, td { border: 1px solid #444; padding: 2px 4px; text-align: center; }
-        th { background: #333; color: #aaa; }
-        .word-cell { text-align: left; color: #4cd137; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th, td { border: 1px solid #333; padding: 2px 4px; text-align: center; }
+        .word-col { text-align: left; color: #4cd137; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="iphone-frame">
-        <div id="jiji-layer" class="layer">じじ（青）</div>
-        <div id="center-layer" class="layer">
-            <div>しりとり、はじめよう。<br>じじからどうぞ</div>
+    <div id="stage">
+        <div id="jiji-area" class="layer">じじ（青）</div>
+        <div id="center-area" class="layer">
+            <div class="card-back">
+                <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:12px;">30件読込中</div>
+            </div>
         </div>
-        <div id="kaito-layer" class="layer">凱士（黄）</div>
+        <div id="kaito-area" class="layer">凱士（黄）</div>
     </div>
 
-    <div id="debug-area">
-        <div style="font-size: 12px; color: #666; margin-bottom: 10px;">1.38 stage.html / iPad mini Debug Mode</div>
-        
-        <div class="panel">
-            <div class="panel-title">mainMaster (進捗管理)</div>
-            <table id="master-table">
-                <thead><tr><th>A</th><th>B</th><th>No</th><th>頭</th><th>尻</th><th>単語</th></tr></thead>
-                <tbody id="master-body"></tbody>
-            </table>
+    <div id="debug-log">
+        <div class="panel-title">
+            楽屋 (Ver 1.58 Debug) 
+            <span class="debug-switch" onclick="document.getElementById('debug-content').classList.toggle('hidden')">表示切替</span>
         </div>
+        
+        <div id="debug-content">
+            <div class="debug-panel">
+                <div class="panel-title">mainMaster (15件+α)</div>
+                <table id="master-table">
+                    <thead><tr><th>A</th><th>B</th><th>No</th><th>頭</th><th>尻</th><th>単語</th></tr></thead>
+                    <tbody id="master-body"></tbody>
+                </table>
+            </div>
 
-        <div class="panel">
-            <div class="panel-title">workFiles (特設ステージ: 上5 / 下5)</div>
-            <table id="work-table">
-                <thead><tr><th>A</th><th>B</th><th>No</th><th>頭</th><th>尻</th><th>単語</th></tr></thead>
-                <tbody id="work-body"></tbody>
-            </table>
+            <div class="debug-panel">
+                <div class="panel-title">workFiles (上5 / 下5)</div>
+                <table id="work-table">
+                    <thead><tr><th>A</th><th>B</th><th>No</th><th>頭</th><th>尻</th><th>単語</th></tr></thead>
+                    <tbody id="work-body"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- 設定 ---
-        const IS_DEBUG = true;
-
-        // じじ指定の30件データ (Ver 1.63 test-logic 準拠)
         const wordList = ["りんご","ごりら","らっぱ","ぱせり","りす","すいか","かめ","めだか","からす","すべりだい","いか","かさ","さかな","なす","すぽーつ","つくえ","えりまき","きつね","ねこ","こあら","らくがき","きゅうきゅうしゃ","あひる","るびー","いぬ","ぬいぐるみ","みみ","みず","すなば","はとり"];
 
-        // データ構造の展開
         const MASTER_DATA = wordList.map((w, i) => ({
-            flagA: 0,
-            flagB: 0,
-            no: i + 1,
-            head: w[0],
-            tail: w[w.length - 1],
-            word: w
+            flagA: 0, flagB: 0, no: i + 1, head: w[0], tail: w[w.length - 1], word: w
         }));
 
         const app = {
             mainMaster: MASTER_DATA,
-            workFiles: [...MASTER_DATA], // 初期はコピー
+            workFiles: [...MASTER_DATA],
 
             init() {
-                if (IS_DEBUG) {
-                    document.getElementById('debug-area').style.display = 'block';
-                    this.renderDebug();
-                }
+                this.render();
             },
 
-            renderDebug() {
-                const createRow = d => `
-                    <tr>
-                        <td>${d.flagA}</td>
-                        <td>${d.flagB}</td>
-                        <td>${d.no}</td>
-                        <td>${d.head}</td>
-                        <td>${d.tail}</td>
-                        <td class="word-cell">${d.word}</td>
-                    </tr>`;
-
-                // mainMaster (10件程度を抜粋表示)
+            render() {
+                const row = d => `<tr><td>${d.flagA}</td><td>${d.flagB}</td><td>${d.no}</td><td>${d.head}</td><td>${d.tail}</td><td class="word-col">${d.word}</td></tr>`;
+                
+                // mainMaster: 15件表示
                 document.getElementById('master-body').innerHTML = 
-                    this.mainMaster.slice(0, 10).map(createRow).join('') + 
-                    `<tr><td colspan="6" style="color:#666">... (全30件)</td></tr>`;
+                    this.mainMaster.slice(0, 15).map(row).join('') + 
+                    `<tr><td colspan="6" style="color:#555">... (中略) ...</td></tr>` +
+                    row(this.mainMaster[29]);
 
-                // workFiles (上5件・下5件)
-                const top5 = this.workFiles.slice(0, 5);
-                const last5 = this.workFiles.slice(-5);
+                // workFiles: 上5・下5
                 document.getElementById('work-body').innerHTML = 
-                    top5.map(createRow).join('') + 
-                    `<tr><td colspan="6" style="background:#111; color:#444">--- 中略 ---</td></tr>` +
-                    last5.map(createRow).join('');
+                    this.workFiles.slice(0, 5).map(row).join('') + 
+                    `<tr><td colspan="6" style="background:#111"></td></tr>` +
+                    this.workFiles.slice(-5).map(row).join('');
             }
         };
 
