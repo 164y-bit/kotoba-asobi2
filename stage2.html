@@ -2,70 +2,120 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>0.11 Stage2.html - 30件フルデータとmainMaster可視化の完遂</title>
+    <title>1.38 stage.html - 30件データと拡張デバッグツールの統合</title>
     <style>
-        :root { --jiji-blue: #007AFF; --center-white: #FFFFFF; --kaito-yellow: #FFD700; }
-        body { background-color: #1a1a1a; color: white; font-family: monospace; display: flex; margin: 0; padding: 10px; }
-        #iphone-frame { width: 375px; height: 812px; background: black; border-radius: 40px; position: relative; overflow: hidden; flex-shrink: 0; border: 8px solid #333; }
-        .layer { width: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; text-align: center; }
+        :root {
+            --jiji-blue: #007AFF;
+            --center-white: #FFFFFF;
+            --kaito-yellow: #FFD700;
+        }
+        body { background-color: #1a1a1a; color: white; font-family: sans-serif; display: flex; margin: 0; padding: 20px; overflow-x: auto; }
+        
+        /* iPhone Stage (Ver 1.37基盤) */
+        #iphone-frame {
+            width: 375px; height: 812px; background: black; border-radius: 40px;
+            position: relative; overflow: hidden; flex-shrink: 0; border: 8px solid #333;
+        }
+        .layer { width: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         #jiji-layer { height: 25%; background: var(--jiji-blue); }
-        #center-layer { height: 50%; background: var(--center-white); color: black; padding: 20px; box-sizing: border-box; }
+        #center-layer { height: 50%; background: var(--center-white); color: black; padding: 20px; box-sizing: border-box; text-align: center; }
         #kaito-layer { height: 25%; background: var(--kaito-yellow); color: black; }
-        #debug-area { margin-left: 15px; flex-grow: 1; font-size: 11px; }
-        .panel { background: #222; border: 1px solid #444; margin-bottom: 8px; padding: 8px; }
-        .panel-title { color: var(--jiji-blue); font-weight: bold; border-bottom: 1px solid #444; margin-bottom: 5px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #333; padding: 2px 4px; text-align: left; }
-        .correct { color: #4cd137; }
-        #retry-btn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 12px 24px; border-radius: 20px; display: none; }
+
+        /* 楽屋 (Debug Tool) - iPhoneの外側に配置 */
+        #debug-area { margin-left: 30px; min-width: 400px; display: none; font-family: monospace; }
+        .panel { background: #222; border-left: 4px solid var(--jiji-blue); margin-bottom: 15px; padding: 10px; }
+        .panel-title { font-size: 14px; font-weight: bold; margin-bottom: 8px; color: var(--jiji-blue); }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 10px; } /* 極限までフォントを下げて網羅 */
+        th, td { border: 1px solid #444; padding: 2px 4px; text-align: center; }
+        th { background: #333; color: #aaa; }
+        .word-cell { text-align: left; color: #4cd137; }
     </style>
 </head>
 <body>
+
     <div id="iphone-frame">
         <div id="jiji-layer" class="layer">じじ（青）</div>
-        <div id="center-layer" class="layer">30件完走テスト準備完了。<br>タイトルと楽屋を確認してください。</div>
+        <div id="center-layer" class="layer">
+            <div>しりとり、はじめよう。<br>じじからどうぞ</div>
+        </div>
         <div id="kaito-layer" class="layer">凱士（黄）</div>
-        <button id="retry-btn" onclick="location.reload()">もう一回</button>
     </div>
+
     <div id="debug-area">
+        <div style="font-size: 12px; color: #666; margin-bottom: 10px;">1.38 stage.html / iPad mini Debug Mode</div>
+        
         <div class="panel">
-            <div class="panel-title">① 進捗 (mainMaster)</div>
-            <div id="master-view"></div>
+            <div class="panel-title">mainMaster (進捗管理)</div>
+            <table id="master-table">
+                <thead><tr><th>A</th><th>B</th><th>No</th><th>頭</th><th>尻</th><th>単語</th></tr></thead>
+                <tbody id="master-body"></tbody>
+            </table>
         </div>
+
         <div class="panel">
-            <div class="panel-title">② 正解候補 (Top5)</div>
-            <table id="top-table"></table>
-        </div>
-        <div class="panel">
-            <div class="panel-title">③ 不正解候補 (Last5)</div>
-            <table id="last-table"></table>
+            <div class="panel-title">workFiles (特設ステージ: 上5 / 下5)</div>
+            <table id="work-table">
+                <thead><tr><th>A</th><th>B</th><th>No</th><th>頭</th><th>尻</th><th>単語</th></tr></thead>
+                <tbody id="work-body"></tbody>
+            </table>
         </div>
     </div>
+
     <script>
-        const MASTER_DATA = [
-            {id:1, head:"り", tail:"ん", word:"りんご"}, {id:2, head:"ご", tail:"ら", word:"ごりら"}, {id:3, head:"ら", tail:"ぱ", word:"らっぱ"},
-            {id:4, head:"ぱ", tail:"だ", word:"ぱんだ"}, {id:5, head:"だ", tail:"い", word:"だいこん"}, {id:6, head:"こ", tail:"ん", word:"こんぶ"},
-            {id:7, head:"ぶ", tail:"た", word:"ぶた"}, {id:8, head:"た", tail:"ぬ", word:"たぬき"}, {id:9, head:"き", tail:"つ", word:"きつね"},
-            {id:10, head:"ね", tail:"こ", word:"ねこ"}, {id:11, head:"こ", tail:"ま", word:"こま"}, {id:12, head:"ま", tail:"と", word:"まと"},
-            {id:13, head:"と", tail:"ら", word:"とら"}, {id:14, head:"ら", tail:"い", word:"らいおん"}, {id:15, head:"お", tail:"ん", word:"おんぷ"},
-            {id:16, head:"ぷ", tail:"ら", word:"ぷらむ"}, {id:17, head:"む", tail:"し", word:"むし"}, {id:18, head:"し", tail:"か", word:"しか"},
-            {id:19, head:"か", tail:"め", word:"かめ"}, {id:20, head:"め", tail:"だ", word:"めだか"}, {id:21, head:"か", tail:"き", word:"かき"},
-            {id:22, head:"き", tail:"く", word:"きく"}, {id:23, head:"く", tail:"ま", word:"くま"}, {id:24, head:"ま", tail:"め", word:"まめ"},
-            {id:25, head:"め", tail:"し", word:"めし"}, {id:26, head:"し", tail:"お", word:"しお"}, {id:27, head:"お", tail:"か", word:"おか"},
-            {id:28, head:"か", tail:"さ", word:"かさ"}, {id:29, head:"さ", tail:"る", word:"さる"}, {id:30, head:"わ", tail:"ん", word:"わん"}
-        ];
+        // --- 設定 ---
+        const IS_DEBUG = true;
+
+        // じじ指定の30件データ (Ver 1.63 test-logic 準拠)
+        const wordList = ["りんご","ごりら","らっぱ","ぱせり","りす","すいか","かめ","めだか","からす","すべりだい","いか","かさ","さかな","なす","すぽーつ","つくえ","えりまき","きつね","ねこ","こあら","らくがき","きゅうきゅうしゃ","あひる","るびー","いぬ","ぬいぐるみ","みみ","みず","すなば","はとり"];
+
+        // データ構造の展開
+        const MASTER_DATA = wordList.map((w, i) => ({
+            flagA: 0,
+            flagB: 0,
+            no: i + 1,
+            head: w[0],
+            tail: w[w.length - 1],
+            word: w
+        }));
+
         const app = {
-            mainMaster: { status: "ACTIVE", turn: 1, render() { document.getElementById('master-view').innerHTML = `状態: ${this.status} / Turn: ${this.turn}`; } },
-            workFiles: {
-                data: MASTER_DATA,
-                render() {
-                    const row = d => `<tr><td>${d.id}</td><td>${d.head}</td><td>${d.tail}</td><td class="correct">${d.word}</td></tr>`;
-                    document.getElementById('top-table').innerHTML = this.data.slice(0, 5).map(row).join('');
-                    document.getElementById('last-table').innerHTML = this.data.slice(-5).map(row).join('');
+            mainMaster: MASTER_DATA,
+            workFiles: [...MASTER_DATA], // 初期はコピー
+
+            init() {
+                if (IS_DEBUG) {
+                    document.getElementById('debug-area').style.display = 'block';
+                    this.renderDebug();
                 }
             },
-            init() { this.mainMaster.render(); this.workFiles.render(); setTimeout(() => document.getElementById('retry-btn').style.display='block', 5000); }
+
+            renderDebug() {
+                const createRow = d => `
+                    <tr>
+                        <td>${d.flagA}</td>
+                        <td>${d.flagB}</td>
+                        <td>${d.no}</td>
+                        <td>${d.head}</td>
+                        <td>${d.tail}</td>
+                        <td class="word-cell">${d.word}</td>
+                    </tr>`;
+
+                // mainMaster (10件程度を抜粋表示)
+                document.getElementById('master-body').innerHTML = 
+                    this.mainMaster.slice(0, 10).map(createRow).join('') + 
+                    `<tr><td colspan="6" style="color:#666">... (全30件)</td></tr>`;
+
+                // workFiles (上5件・下5件)
+                const top5 = this.workFiles.slice(0, 5);
+                const last5 = this.workFiles.slice(-5);
+                document.getElementById('work-body').innerHTML = 
+                    top5.map(createRow).join('') + 
+                    `<tr><td colspan="6" style="background:#111; color:#444">--- 中略 ---</td></tr>` +
+                    last5.map(createRow).join('');
+            }
         };
+
         window.onload = () => app.init();
     </script>
 </body>
