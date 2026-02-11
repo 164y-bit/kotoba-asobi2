@@ -2,67 +2,85 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>1.58 stage.html - 30件データと拡張デバッグツールの統合</title>
+    <title>1.58 stage.html - 1.57完全移植とflagA初期化</title>
     <style>
-        /* --- 1.57 ビジュアル完全継承 --- */
+        /* --- 1.57のビジュアルを完全再現 --- */
         :root {
             --jiji-blue: #007AFF;
             --center-white: #FFFFFF;
-            --kaito-yellow: #FFD700;
-            --card-edge: #FFD700; /* 黄色の縁取り */
+            --kaito-yellow: #FFC000; /* 1.57の凱士カラー */
         }
         body { 
-            background: linear-gradient(135deg, #2c3e50, #000); 
-            color: white; font-family: sans-serif; 
+            background: #1a1a1a; color: white; font-family: sans-serif; 
             display: flex; justify-content: flex-start; align-items: center;
             margin: 0; padding: 20px; height: 100vh; overflow-x: auto;
         }
 
-        /* iPhone X/13形式 (375x812) */
+        /* 外枠レインボー (1.57完全移植) */
+        #stage-wrapper {
+            padding: 10px;
+            background: linear-gradient(45deg, #f06, #f90, #ff0, #0f0, #0ff, #00f, #90f, #f06);
+            background-size: 400% 400%;
+            animation: rainbow 10s ease infinite;
+            border-radius: 50px;
+            flex-shrink: 0;
+        }
+        @keyframes rainbow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
         #stage {
             width: 375px; height: 812px; background: black; border-radius: 40px;
-            position: relative; overflow: hidden; flex-shrink: 0;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8); border: 10px solid #333;
+            position: relative; overflow: hidden;
         }
-        .layer { width: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; position: relative; }
-        #jiji-area { height: 25%; background: var(--jiji-blue); }
-        #center-area { height: 50%; background: var(--center-white); color: black; }
-        #kaito-area { height: 25%; background: var(--kaito-yellow); color: black; }
 
-        /* カードデザイン (105:215) */
-        .card-back {
-            width: 105px; height: 215px; border: 4px solid var(--card-edge);
+        /* 3層構造 (1.37/1.57比率) */
+        #jiji-area { height: 25%; background: var(--jiji-blue); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #center-area { height: 50%; background: var(--center-white); display: flex; align-items: center; justify-content: center; position: relative; }
+        #kaito-area { height: 25%; background: var(--kaito-yellow); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+        /* アイコン配置 (1.57再現) */
+        .avatar { width: 80px; height: 80px; border-radius: 50%; background: white; border: 3px solid #ccc; overflow: hidden; }
+        .hand-area { display: flex; gap: 5px; margin-top: 5px; }
+        .mini-card { width: 30px; height: 50px; background: white; border: 1px solid #333; border-radius: 4px; }
+
+        /* カードデザイン (1.41厳守) */
+        .card-center {
+            width: 105px; height: 215px; border: 4px solid #FFD700;
             background: white; border-radius: 8px; position: relative;
+            display: flex; align-items: center; justify-content: center;
+            color: black; font-weight: bold; font-size: 18px; writing-mode: vertical-rl;
         }
 
-        /* --- 楽屋（右側スペース） --- */
-        #debug-log {
-            margin-left: 40px; height: 812px; min-width: 450px;
-            display: flex; flex-direction: column; gap: 10px;
-        }
-        .debug-panel { 
-            background: rgba(0,0,0,0.7); border: 1px solid #444; 
-            padding: 10px; border-radius: 10px; font-family: monospace;
-        }
+        /* --- 楽屋（右側） --- */
+        #debug-log { margin-left: 40px; height: 812px; min-width: 450px; }
+        .debug-panel { background: rgba(0,0,0,0.8); border: 1px solid #444; padding: 10px; border-radius: 10px; margin-bottom: 10px; }
         .panel-title { color: var(--jiji-blue); font-size: 14px; margin-bottom: 5px; font-weight: bold; display: flex; justify-content: space-between; }
         .debug-switch { color: #888; cursor: pointer; text-decoration: underline; font-size: 10px; }
-        
-        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; font-family: monospace; }
         th, td { border: 1px solid #333; padding: 2px 4px; text-align: center; }
-        .word-col { text-align: left; color: #4cd137; }
+        .active-row { background: rgba(76, 209, 55, 0.2); }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="stage">
-        <div id="jiji-area" class="layer">じじ（青）</div>
-        <div id="center-area" class="layer">
-            <div class="card-back">
-                <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:12px;">30件読込中</div>
+    <div id="stage-wrapper">
+        <div id="stage">
+            <div id="jiji-area">
+                <div class="avatar"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=jiji" alt="じじ"></div>
+                <div class="hand-area"><div class="mini-card"></div><div class="mini-card"></div><div class="mini-card"></div></div>
+                <div style="font-size:12px; margin-top:5px; color:white;">じじ（青）</div>
+            </div>
+            
+            <div id="center-area">
+                <div class="card-center">りんご</div>
+            </div>
+            
+            <div id="kaito-area">
+                <div style="font-size:12px; margin-bottom:5px; color:black;">凱士（黄）</div>
+                <div class="hand-area"><div class="mini-card"></div><div class="mini-card"></div><div class="mini-card"></div></div>
+                <div class="avatar"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=kaito" alt="凱士"></div>
             </div>
         </div>
-        <div id="kaito-area" class="layer">凱士（黄）</div>
     </div>
 
     <div id="debug-log">
@@ -70,7 +88,6 @@
             楽屋 (Ver 1.58 Debug) 
             <span class="debug-switch" onclick="document.getElementById('debug-content').classList.toggle('hidden')">表示切替</span>
         </div>
-        
         <div id="debug-content">
             <div class="debug-panel">
                 <div class="panel-title">mainMaster (15件+α)</div>
@@ -79,7 +96,6 @@
                     <tbody id="master-body"></tbody>
                 </table>
             </div>
-
             <div class="debug-panel">
                 <div class="panel-title">workFiles (上5 / 下5)</div>
                 <table id="work-table">
@@ -94,34 +110,24 @@
         const wordList = ["りんご","ごりら","らっぱ","ぱせり","りす","すいか","かめ","めだか","からす","すべりだい","いか","かさ","さかな","なす","すぽーつ","つくえ","えりまき","きつね","ねこ","こあら","らくがき","きゅうきゅうしゃ","あひる","るびー","いぬ","ぬいぐるみ","みみ","みず","すなば","はとり"];
 
         const MASTER_DATA = wordList.map((w, i) => ({
-            flagA: 0, flagB: 0, no: i + 1, head: w[0], tail: w[w.length - 1], word: w
+            flagA: (i === 0 ? 1 : 0), // No.1 りんごだけ flagA=1
+            flagB: 0, 
+            no: i + 1, 
+            head: w[0], 
+            tail: w[w.length - 1], 
+            word: w
         }));
 
         const app = {
             mainMaster: MASTER_DATA,
             workFiles: [...MASTER_DATA],
-
-            init() {
-                this.render();
-            },
-
+            init() { this.render(); },
             render() {
-                const row = d => `<tr><td>${d.flagA}</td><td>${d.flagB}</td><td>${d.no}</td><td>${d.head}</td><td>${d.tail}</td><td class="word-col">${d.word}</td></tr>`;
-                
-                // mainMaster: 15件表示
-                document.getElementById('master-body').innerHTML = 
-                    this.mainMaster.slice(0, 15).map(row).join('') + 
-                    `<tr><td colspan="6" style="color:#555">... (中略) ...</td></tr>` +
-                    row(this.mainMaster[29]);
-
-                // workFiles: 上5・下5
-                document.getElementById('work-body').innerHTML = 
-                    this.workFiles.slice(0, 5).map(row).join('') + 
-                    `<tr><td colspan="6" style="background:#111"></td></tr>` +
-                    this.workFiles.slice(-5).map(row).join('');
+                const row = d => `<tr class="${d.flagA === 1 ? 'active-row' : ''}"><td>${d.flagA}</td><td>${d.flagB}</td><td>${d.no}</td><td>${d.head}</td><td>${d.tail}</td><td style="text-align:left; color:#4cd137;">${d.word}</td></tr>`;
+                document.getElementById('master-body').innerHTML = this.mainMaster.slice(0, 15).map(row).join('') + `<tr><td colspan="6" style="color:#666">...</td></tr>` + row(this.mainMaster[29]);
+                document.getElementById('work-body').innerHTML = this.workFiles.slice(0, 5).map(row).join('') + `<tr><td colspan="6" style="height:10px; background:#111"></td></tr>` + this.workFiles.slice(-5).map(row).join('');
             }
         };
-
         window.onload = () => app.init();
     </script>
 </body>
