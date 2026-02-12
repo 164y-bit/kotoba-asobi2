@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1.59.2 stage.html - 原状復帰とコアデータ構造の再定義</title>
+    <title>1.59.3 stage.html - 石碑(mainMaster)の前後16枚抽出仕様</title>
     <style>
         /* --- 1.57/1.59の黄金比CSSを完全維持 --- */
         :root { 
@@ -31,7 +31,6 @@
         .area-mid { flex: 280; background: #fff; position: relative; z-index: 1; }
         .area-kaito { flex: 332; background: var(--g-yellow); position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; }
         
-        /* 1.57 メッセージ大小の復活 */
         .mid-msg-unit { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 90%; display: flex; flex-direction: column; z-index: 5; }
         .msg-large { background: var(--g-green); color: white; padding: 8px 0; font-size: 1.4rem; font-weight: 900; text-align: center; border-radius: 8px 8px 0 0; }
         .msg-debug { background: var(--g-blue); color: white; padding: 4px 0; font-size: 0.8rem; text-align: center; border-radius: 0 0 8px 8px; }
@@ -47,12 +46,13 @@
         .card-red-border { outline: 6px solid var(--g-red); outline-offset: -8px; z-index: 15; }
         .icon-kaito { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 30; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
 
-        /* --- 楽屋（事実のみを表示） --- */
+        /* --- 楽屋（16枚抽出仕様） --- */
         #debug-gakuya { margin-left: 20px; color: #ccc; font-family: monospace; font-size: 11px; background: rgba(0,0,0,0.85); padding: 15px; border-radius: 10px; border: 1px solid #444; width: 450px; height: 780px; overflow-y: auto; }
         .gakuya-title { color: var(--g-blue); font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
         th, td { border: 1px solid #333; padding: 2px 4px; text-align: center; }
         .word-cell { text-align: left; color: var(--g-green); }
+        .ellipsis { color: #888; text-align: center; padding: 5px; background: rgba(255,255,255,0.05); }
         .not-found { color: var(--g-red); padding: 10px; border: 1px dashed var(--g-red); text-align: center; }
     </style>
 </head>
@@ -67,7 +67,7 @@
             <div class="played-card">りんご</div>
             <div class="mid-msg-unit">
                 <div class="msg-large">じじの番だよ</div>
-                <div class="msg-debug">debug: mainMaster Data Loaded</div>
+                <div class="msg-debug">debug: mainMaster 16 slots view</div>
             </div>
             <button id="deal-btn">もう一回</button>
         </div>
@@ -78,7 +78,7 @@
     </div>
 
     <div id="debug-gakuya">
-        <div class="gakuya-title">mainMaster (全件)</div>
+        <div class="gakuya-title">mainMaster (1〜8 & 末尾8)</div>
         <table>
             <thead><tr><th>A</th><th>B</th><th>No</th><th>頭</th><th>尻</th><th>単語</th></tr></thead>
             <tbody id="master-body"></tbody>
@@ -92,11 +92,11 @@
         // コアデータ
         const wordList = ["りんご","ごりら","らっぱ","ぱせり","りす","すいか","かめ","めだか","からす","すべりだい","いか","かさ","さかな","なす","すぽーつ","つくえ","えりまき","きつね","ねこ","こあら","らくがき","きゅうきゅうしゃ","あひる","るびー","いぬ","ぬいぐるみ","みみ","みず","すなば","はとり"];
 
+        // じじ設計案：Noはデータの中に整数で持つ
         const mainMaster = wordList.map((w, i) => ({
             flagA: 0, flagB: 0, no: i + 1, head: w[0], tail: w[w.length - 1], word: w
         }));
 
-        // kaitoHand オブジェクト
         const kaitoHand = {
             cards: ["トイレットペーパー", "ヨーグルト", "りんご"],
             render() {
@@ -108,14 +108,26 @@
             }
         };
 
+        // 16枚抽出表示ルーチン
         function renderMaster() {
             const tbody = document.getElementById('master-body');
-            tbody.innerHTML = mainMaster.map(d => `
+            const len = mainMaster.length;
+            
+            // 最初から8枚
+            const first8 = mainMaster.slice(0, 8);
+            // 後ろから8枚
+            const last8 = mainMaster.slice(-8);
+
+            const rowHTML = (d) => `
                 <tr>
                     <td>${d.flagA}</td><td>${d.flagB}</td><td>${d.no}</td>
                     <td>${d.head}</td><td>${d.tail}</td><td class="word-cell">${d.word}</td>
                 </tr>
-            `).join('');
+            `;
+
+            tbody.innerHTML = first8.map(rowHTML).join('') + 
+                `<tr><td colspan="6" class="ellipsis">... (No.9 〜 No.${len-8} 中略) ...</td></tr>` + 
+                last8.map(rowHTML).join('');
         }
 
         window.onload = () => {
