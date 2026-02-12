@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1.58 stage.html - 30件データと楽屋ツールの統合</title>
+    <title>1.59 stage.html - kaitoHandオブジェクトによる手札表示</title>
     <style>
-        /* --- 1.57の全CSSを完全ロック(変更禁止) --- */
+        /* --- 1.57の全CSSを完全ロック --- */
         :root { 
             --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; 
             --j-card-w: 28px; --j-card-h: 57px;
         }
         html, body { 
             overflow: hidden; height: 100%; position: fixed; width: 100%;
-            background: #202124; margin: 0; display: flex; flex-direction: column; align-items: center; 
+            background: #202124; margin: 0; display: flex; 
+            justify-content: flex-start; /* 左寄せに変更 */
+            align-items: center; 
             font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+            padding-left: 20px;
         }
         #iphone-frame { 
             width: 375px; height: 812px;
@@ -23,7 +26,7 @@
             background-image: linear-gradient(#fff, #fff), 
                               linear-gradient(to bottom right, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green));
             background-origin: border-box; background-clip: content-box, border-box;
-            box-sizing: border-box;
+            box-sizing: border-box; flex-shrink: 0;
         }
         .area-jiji { flex: 200; background: var(--g-blue); position: relative; z-index: 1; }
         .area-mid { flex: 280; background: #fff; position: relative; z-index: 1; }
@@ -36,23 +39,14 @@
         .msg-debug { background: var(--g-blue); color: white; padding: 4px 0; font-size: 0.8rem; text-align: center; border-radius: 0 0 8px 8px; }
         .played-card { position: absolute; left: 50%; transform: translateX(-50%); top: 15px; width: 70px; height: 143px; background: white; border: 2px solid #555; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; writing-mode: vertical-rl; text-orientation: upright; font-size: 1.2rem; z-index: 10; }
         #deal-btn { position: absolute; right: 15px; bottom: 15px; width: 125px; height: 125px; border-radius: 50%; background: var(--g-red); color: white; border: 6px solid var(--g-yellow); font-weight: bold; font-size: 1.2rem; z-index: 20; box-shadow: 0 6px 0 #b22; cursor: pointer; }
-        .hand-kaito { display: flex; gap: 6px; justify-content: center; width: 100%; align-items: flex-end; margin-bottom: -15px; z-index: 10; position: relative; }
+        .hand-kaito { display: flex; gap: 6px; justify-content: center; width: 100%; align-items: flex-end; margin-bottom: -15px; z-index: 10; position: relative; min-height: 215px; }
         .card-main { background: white; border: 2.5px solid #555; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #333; width: 105px; height: 215px; writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8rem; text-align: center; box-sizing: border-box; }
         .card-jump { transform: translateY(-40px); z-index: 20; }
         .card-red-border { outline: 6px solid var(--g-red); outline-offset: -8px; z-index: 15; }
         .icon-kaito { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 30; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
 
-        /* --- 楽屋（独立レイアウト） --- */
-        #debug-gakuya {
-            position: fixed; left: 400px; top: 20px; width: 450px;
-            color: #ccc; font-family: monospace; font-size: 11px;
-            background: rgba(0,0,0,0.85); padding: 15px; border-radius: 10px; border: 1px solid #444;
-        }
-        .gakuya-title { color: var(--g-blue); font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        th, td { border: 1px solid #333; padding: 2px 4px; text-align: center; }
-        .active-row { background: rgba(52, 168, 83, 0.3); }
-        .word-cell { text-align: left; color: var(--g-green); }
+        /* --- 楽屋 --- */
+        #debug-gakuya { margin-left: 20px; color: #ccc; font-family: monospace; font-size: 11px; background: rgba(0,0,0,0.85); padding: 15px; border-radius: 10px; border: 1px solid #444; width: 400px; }
     </style>
 </head>
 <body>
@@ -60,83 +54,53 @@
     <div id="iphone-frame">
         <div class="area-jiji">
             <div class="icon-jiji"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=jiji" width="100%"></div>
-            <div class="hand-jiji">
-                <div class="card-mini"></div><div class="card-mini"></div><div class="card-mini"></div>
-            </div>
+            <div class="hand-jiji"><div class="card-mini"></div><div class="card-mini"></div><div class="card-mini"></div></div>
         </div>
         <div class="area-mid">
-            <div id="center-card" class="played-card">りんご</div>
+            <div class="played-card">りんご</div>
             <div class="mid-msg-unit">
                 <div class="msg-large">じじの番だよ</div>
-                <div class="msg-debug">debug: mainMaster Data Loaded</div>
+                <div class="msg-debug">debug: kaitoHand objects only</div>
             </div>
             <button id="deal-btn">もう一回</button>
         </div>
         <div class="area-kaito">
-            <div class="hand-kaito">
-                <div class="card-main card-jump">トイレットペーパー</div>
-                <div class="card-main card-red-border">ヨーグルト</div>
-                <div class="card-main">りんご</div>
-            </div>
+            <div id="kaito-hand-display" class="hand-kaito"></div>
             <div class="icon-kaito"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=kaito" width="100%"></div>
         </div>
     </div>
 
     <div id="debug-gakuya">
-        <div class="gakuya-title">楽屋 (1.58 Debug) - mainMaster / workFiles</div>
-        <div id="master-view">
-            <table>
-                <thead><tr><th>A</th><th>B</th><th>No</th><th>頭</th><th>尻</th><th>単語</th></tr></thead>
-                <tbody id="master-body"></tbody>
-            </table>
-        </div>
-        <div class="gakuya-title">workFiles (上5 / 下5)</div>
-        <table id="work-table">
-            <tbody id="work-body"></tbody>
-        </table>
+        <div>楽屋 (1.59) - kaitoHand ルーチン確認</div>
+        <p>指示通り、凱士の手札に「トイレットペーパー」「ヨーグルト」「りんご」を固定値で表示しています。</p>
     </div>
 
     <script>
-        // じじ指定の30単語
-        const wordList = ["りんご","ごりら","らっぱ","ぱせり","りす","すいか","かめ","めだか","からす","すべりだい","いか","かさ","さかな","なす","すぽーつ","つくえ","えりまき","きつね","ねこ","こあら","らくがき","きゅうきゅうしゃ","あひる","るびー","いぬ","ぬいぐるみ","みみ","みず","すなば","はとり"];
+        // 凱士の手札オブジェクト
+        const kaitoHand = {
+            // ① カードデータ（固定値）
+            cards: ["トイレットペーパー", "ヨーグルト", "りんご"],
 
-        const app = {
-            mainMaster: wordList.map((w, i) => ({
-                flagA: (i === 0 ? 1 : 0), // No.1 りんごを初期確定
-                flagB: 0,
-                no: i + 1,
-                head: w[0],
-                tail: w[w.length - 1],
-                word: w
-            })),
-            
-            init() {
-                this.workFiles = [...this.mainMaster];
-                this.renderDebug();
-            },
-
-            renderDebug() {
-                const rowHtml = d => `
-                    <tr class="${d.flagA === 1 ? 'active-row' : ''}">
-                        <td>${d.flagA}</td><td>${d.flagB}</td><td>${d.no}</td>
-                        <td>${d.head}</td><td>${d.tail}</td><td class="word-cell">${d.word}</td>
-                    </tr>`;
-
-                // mainMaster: 15件 + 最後
-                const mBody = document.getElementById('master-body');
-                mBody.innerHTML = this.mainMaster.slice(0, 15).map(rowHtml).join('') + 
-                                 '<tr><td colspan="6" style="color:#555">...</td></tr>' + 
-                                 rowHtml(this.mainMaster[29]);
-
-                // workFiles: 上5 + 下5
-                const wBody = document.getElementById('work-body');
-                wBody.innerHTML = this.workFiles.slice(0, 5).map(rowHtml).join('') + 
-                                 '<tr><td colspan="6" style="height:5px; background:#222"></td></tr>' + 
-                                 this.workFiles.slice(-5).map(rowHtml).join('');
+            // ③ 表示ルーチン
+            render() {
+                const container = document.getElementById('kaito-hand-display');
+                
+                // HTMLを生成して流し込む
+                container.innerHTML = this.cards.map((word, index) => {
+                    // 1.57の見た目（ジャンプや赤縁）を再現するためのクラス分け例
+                    let extraClass = "";
+                    if (index === 0) extraClass = "card-jump";
+                    if (index === 1) extraClass = "card-red-border";
+                    
+                    return `<div class="card-main ${extraClass}">${word}</div>`;
+                }).join('');
             }
         };
 
-        window.onload = () => app.init();
+        // 起動時に凱士の手札を表示
+        window.onload = () => {
+            kaitoHand.render();
+        };
     </script>
 </body>
 </html>
