@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1.59.1 stage.html - 古の石碑(mainMaster)の開示</title>
+    <title>1.59.2 stage.html - 原状復帰とコアデータ構造の再定義</title>
     <style>
-        /* --- 1.57からの黄金比CSSを継承 --- */
+        /* --- 1.57/1.59の黄金比CSSを完全維持 --- */
         :root { 
             --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; 
             --j-card-w: 28px; --j-card-h: 57px;
@@ -30,6 +30,12 @@
         .area-jiji { flex: 200; background: var(--g-blue); position: relative; z-index: 1; }
         .area-mid { flex: 280; background: #fff; position: relative; z-index: 1; }
         .area-kaito { flex: 332; background: var(--g-yellow); position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; }
+        
+        /* 1.57 メッセージ大小の復活 */
+        .mid-msg-unit { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 90%; display: flex; flex-direction: column; z-index: 5; }
+        .msg-large { background: var(--g-green); color: white; padding: 8px 0; font-size: 1.4rem; font-weight: 900; text-align: center; border-radius: 8px 8px 0 0; }
+        .msg-debug { background: var(--g-blue); color: white; padding: 4px 0; font-size: 0.8rem; text-align: center; border-radius: 0 0 8px 8px; }
+
         .icon-jiji { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; position: absolute; left: 50%; transform: translateX(-50%); top: 20px; z-index: 20; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
         .hand-jiji { display: flex; gap: 3px; position: absolute; left: 50%; transform: translateX(-50%); top: 75px; z-index: 10; }
         .card-mini { width: var(--j-card-w); height: var(--j-card-h); background: #eee; border: 1px solid white; border-radius: 3px; }
@@ -41,12 +47,13 @@
         .card-red-border { outline: 6px solid var(--g-red); outline-offset: -8px; z-index: 15; }
         .icon-kaito { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; z-index: 30; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
 
-        /* --- 楽屋 --- */
-        #debug-gakuya { margin-left: 20px; color: #ccc; font-family: monospace; font-size: 11px; background: rgba(0,0,0,0.85); padding: 15px; border-radius: 10px; border: 1px solid #444; width: 420px; height: 780px; overflow-y: auto; }
+        /* --- 楽屋（事実のみを表示） --- */
+        #debug-gakuya { margin-left: 20px; color: #ccc; font-family: monospace; font-size: 11px; background: rgba(0,0,0,0.85); padding: 15px; border-radius: 10px; border: 1px solid #444; width: 450px; height: 780px; overflow-y: auto; }
         .gakuya-title { color: var(--g-blue); font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
         th, td { border: 1px solid #333; padding: 2px 4px; text-align: center; }
-        .not-found { color: var(--g-red); font-weight: bold; padding: 20px; text-align: center; border: 1px dashed var(--g-red); }
+        .word-cell { text-align: left; color: var(--g-green); }
+        .not-found { color: var(--g-red); padding: 10px; border: 1px dashed var(--g-red); text-align: center; }
     </style>
 </head>
 <body>
@@ -58,6 +65,10 @@
         </div>
         <div class="area-mid">
             <div class="played-card">りんご</div>
+            <div class="mid-msg-unit">
+                <div class="msg-large">じじの番だよ</div>
+                <div class="msg-debug">debug: mainMaster Data Loaded</div>
+            </div>
             <button id="deal-btn">もう一回</button>
         </div>
         <div class="area-kaito">
@@ -67,21 +78,25 @@
     </div>
 
     <div id="debug-gakuya">
-        <div class="gakuya-title">楽屋 (1.59.1) - 古の石碑(mainMaster)</div>
+        <div class="gakuya-title">mainMaster (全件)</div>
         <table>
-            <thead><tr><th>No</th><th>頭</th><th>尻</th><th>単語</th></tr></thead>
+            <thead><tr><th>A</th><th>B</th><th>No</th><th>頭</th><th>尻</th><th>単語</th></tr></thead>
             <tbody id="master-body"></tbody>
         </table>
         
-        <div class="gakuya-title">workFiles (写本)</div>
-        <div id="work-files-area" class="not-found">NOT FOUND (儀式未完了)</div>
+        <div class="gakuya-title">workFiles</div>
+        <div class="not-found">NOT FOUND</div>
     </div>
 
     <script>
-        // 古の石碑（この星の真理：30単語）
-        const mainMaster = ["りんご","ごりら","らっぱ","ぱせり","りす","すいか","かめ","めだか","からす","すべりだい","いか","かさ","さかな","なす","すぽーつ","つくえ","えりまき","きつね","ねこ","こあら","らくがき","きゅうきゅうしゃ","あひる","るびー","いぬ","ぬいぐるみ","みみ","みず","すなば","はとり"];
+        // コアデータ
+        const wordList = ["りんご","ごりら","らっぱ","ぱせり","りす","すいか","かめ","めだか","からす","すべりだい","いか","かさ","さかな","なす","すぽーつ","つくえ","えりまき","きつね","ねこ","こあら","らくがき","きゅうきゅうしゃ","あひる","るびー","いぬ","ぬいぐるみ","みみ","みず","すなば","はとり"];
 
-        // 凱士の手札オブジェクト（遺産）
+        const mainMaster = wordList.map((w, i) => ({
+            flagA: 0, flagB: 0, no: i + 1, head: w[0], tail: w[w.length - 1], word: w
+        }));
+
+        // kaitoHand オブジェクト
         const kaitoHand = {
             cards: ["トイレットペーパー", "ヨーグルト", "りんご"],
             render() {
@@ -93,22 +108,19 @@
             }
         };
 
-        // 楽屋に石碑を表示するルーチン
         function renderMaster() {
             const tbody = document.getElementById('master-body');
-            tbody.innerHTML = mainMaster.map((word, i) => `
+            tbody.innerHTML = mainMaster.map(d => `
                 <tr>
-                    <td>${i+1}</td>
-                    <td>${word[0]}</td>
-                    <td>${word[word.length-1]}</td>
-                    <td style="text-align:left; color:var(--g-green)">${word}</td>
+                    <td>${d.flagA}</td><td>${d.flagB}</td><td>${d.no}</td>
+                    <td>${d.head}</td><td>${d.tail}</td><td class="word-cell">${d.word}</td>
                 </tr>
             `).join('');
         }
 
         window.onload = () => {
-            renderMaster(); // 石碑を開示
-            kaitoHand.render(); // 凱士の手札を表示
+            renderMaster();
+            kaitoHand.render();
         };
     </script>
 </body>
