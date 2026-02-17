@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1.61 stage.html - msgFmt通信と石碑(mainMaster)同期の実装</title>
+    <title>1.62 stage.html - mainMaster起動儀式とカード独立動作の実装</title>
     <style>
         :root { 
             --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; 
-            --j-card-w: 28px; --j-card-h: 57px;
             --card-w: 105px; --card-h: 215px;
         }
         html, body { 
@@ -18,67 +17,55 @@
             padding-left: 20px;
         }
         #iphone-frame { 
-            width: 375px; height: 812px;
-            background: #ffffff; position: relative; overflow: hidden;
-            display: flex; flex-direction: column;
-            border-radius: 40px; border: 10px solid transparent;
-            background-image: linear-gradient(#fff, #fff), 
-                              linear-gradient(to bottom right, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green));
-            background-origin: border-box; background-clip: content-box, border-box;
-            box-sizing: border-box; flex-shrink: 0;
+            width: 375px; height: 812px; background: #ffffff; position: relative; overflow: hidden;
+            display: flex; flex-direction: column; border-radius: 40px; border: 10px solid transparent;
+            background-image: linear-gradient(#fff, #fff), linear-gradient(to bottom right, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green));
+            background-origin: border-box; background-clip: content-box, border-box; box-sizing: border-box; flex-shrink: 0;
         }
         .area-jiji { flex: 200; background: var(--g-blue); position: relative; }
         .area-mid { flex: 280; background: #fff; position: relative; overflow: hidden; }
         .area-kaito { flex: 332; background: var(--g-yellow); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; }
         
-        /* カードデザイン (赤・緑三角形) */
+        /* カードデザイン (純化) */
         .card-base { 
-            width: var(--card-w); height: var(--card-h); background: white; 
-            border: 2.5px solid #ffd700; border-radius: 12px; 
-            position: absolute; box-sizing: border-box; transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-            display: flex; align-items: center; justify-content: center;
-            writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8rem; font-weight: 900;
+            width: var(--card-w); height: var(--card-h); background: white; border: 4px solid var(--g-yellow); border-radius: 12px; 
+            position: relative; box-sizing: border-box; transition: transform 0.3s;
+            display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8rem; font-weight: 900;
         }
         .tri-red-top { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 35px solid transparent; border-right: 35px solid transparent; border-top: 20px solid var(--g-red); }
         .tri-red-btm { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 35px solid transparent; border-right: 35px solid transparent; border-bottom: 20px solid var(--g-red); }
         .tri-grn-left { position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 50px solid transparent; border-bottom: 50px solid transparent; border-left: 10px solid var(--g-green); }
         .tri-grn-right { position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 50px solid transparent; border-bottom: 50px solid transparent; border-right: 10px solid var(--g-green); }
 
-        .card-is-up { transform: translateY(-40px); z-index: 50; }
+        .card-is-up { transform: translateY(-40px); }
         .card-reverse { transform: rotate(180deg); }
 
-        /* アイコン */
         .icon-circle { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.2); position: absolute; z-index: 60; }
         .icon-jiji { left: 50%; transform: translateX(-50%); top: 20px; }
-        .icon-kaito { bottom: 10px; right: 10px; cursor: pointer; display: none; }
+        .icon-kaito { bottom: 10px; right: 10px; display: none; cursor: pointer; }
         .flash-fast { animation: flsh 0.3s infinite; }
         .flash-slow { animation: flsh 1.0s infinite; }
-        @keyframes flsh { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        @keyframes flsh { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-        /* デバッグ・石碑 */
-        #debug-panel { margin-left: 20px; color: #ccc; font-family: monospace; font-size: 11px; background: rgba(0,0,0,0.9); padding: 15px; border-radius: 10px; width: 480px; height: 780px; overflow-y: auto; }
+        #debug-panel { margin-left: 20px; color: #ccc; font-family: monospace; font-size: 11px; background: rgba(0,0,0,0.95); padding: 15px; border-radius: 10px; width: 480px; height: 780px; overflow-y: auto; }
         .panel-title { color: var(--g-blue); font-weight: bold; border-bottom: 1px solid #444; margin: 10px 0 5px; }
-        table { width: 100%; border-collapse: collapse; font-size: 10px; }
+        table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #333; padding: 2px; text-align: center; }
-        .log-line { color: #0f0; border-bottom: 1px solid #222; padding: 2px 0; }
-        .msg-large { position: absolute; bottom: 10px; width: 100%; text-align: center; color: white; background: var(--g-green); font-weight: 900; font-size: 1.4rem; padding: 8px 0; z-index: 100; display: none;}
-        
-        #deal-btn { position: absolute; right: 15px; bottom: 15px; width: 100px; height: 100px; border-radius: 50%; background: var(--g-red); color: white; border: 4px solid var(--g-yellow); font-weight: bold; cursor: pointer; z-index: 110; display: none; }
+        .log-line { color: #0f0; border-bottom: 1px solid #222; padding: 2px 0; white-space: pre-wrap; }
+        .log-complete { color: #fff; background: var(--g-green); font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="iphone-frame">
-        <div class="area-jiji" id="jiji-area">
+        <div class="area-jiji">
             <div class="icon-circle icon-jiji"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=jiji" width="100%"></div>
             <div id="jiji-hand-view" style="display:flex; gap:5px; justify-content:center; margin-top:110px;"></div>
         </div>
         <div class="area-mid" id="mid-area">
-            <div id="played-card-slot"></div>
-            <div id="msg-banner" class="msg-large"></div>
-            <button id="deal-btn">もう一回</button>
+            <div id="played-card-slot" style="position:absolute; left:50%; top:20px; transform:translateX(-50%);"></div>
         </div>
-        <div class="area-kaito" id="kaito-area">
+        <div class="area-kaito">
             <div id="kaito-hand-view" style="display:flex; gap:6px; position:absolute; bottom:110px;"></div>
             <div id="kaito-icon" class="icon-circle icon-kaito"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=kaito" width="100%"></div>
         </div>
@@ -94,22 +81,20 @@
     </div>
 
 <script>
-// --- コアデータ・石碑 ---
+// --- コアデータ ---
 const wordSource = ["りんご","ごりら","らっぱ","ぱせり","りす","すいか","かめ","めだか","からす","すべりだい","いか","かさ","さかな","なす","すぽーつ","つくえ","えりまき","きつね","ねこ","こあら","らくがき","あひる","るびー","いぬ","ぬいぐるみ","みみ","みず","すなば","はとり"];
-let mainMaster = wordSource.map((w, i) => ({ flagA: 0, flagB: 0, no: i + 1, head: w[0], tail: w.slice(-1), word: w }));
-let workFiles = [...mainMaster];
+let mainMaster = wordSource.map((w, i) => ({ flagA: (i===0?1:0), flagB: 0, no: i + 1, head: w[0], tail: w.slice(-1), word: w }));
+let workFiles = [];
 let lastPlayedTail = "り";
 
-// --- ログ出力 ---
 function sendMsgFmt(to, from, type, detail) {
     const log = document.getElementById('fmt-log');
     const line = document.createElement('div');
-    line.className = 'log-line';
+    line.className = 'log-line' + (type === "正常完了" ? " log-complete" : "");
     line.innerText = `msgFmt: [${to}] from [${from}] - ${type} | ${detail}`;
     log.prepend(line);
 }
 
-// --- 描画系 ---
 function updateDebug() {
     const mBody = document.querySelector('#master-table tbody');
     mBody.innerHTML = mainMaster.slice(0, 8).concat(mainMaster.slice(-8)).map(d => 
@@ -117,28 +102,32 @@ function updateDebug() {
     ).join('');
     
     const wBody = document.querySelector('#work-table tbody');
-    wBody.innerHTML = workFiles.map(d => 
+    wBody.innerHTML = workFiles.length ? workFiles.map(d => 
         `<tr><td>${d.no}</td><td>${d.head}</td><td>${d.tail}</td><td>${d.word}</td></tr>`
-    ).join('');
+    ).join('') : '<tr><td colspan="4" style="color:red">NOT FOUND</td></tr>';
 }
 
-function createCardHTML(word, isReverse = false) {
-    return `
-        <div class="card-base ${isReverse ? 'card-reverse' : ''}">
-            <div class="tri-red-top"></div><div class="tri-red-btm"></div>
-            <div class="tri-grn-left"></div><div class="tri-grn-right"></div>
-            ${word}
-        </div>`;
-}
+const mainMasterObj = {
+    executeStartProcess() {
+        sendMsgFmt("mainMaster", "jijiHand", "依頼", "起動直後処理");
+        // workFilesファイルをmainMasterファイルから複製
+        workFiles = JSON.parse(JSON.stringify(mainMaster));
+        // flagA(降順) No.(昇順)でソート
+        workFiles.sort((a, b) => (b.flagA - a.flagA) || (a.no - b.no));
+        updateDebug();
+        setTimeout(() => {
+            sendMsgFmt("jijiHand", "mainMaster", "正常完了", "起動直後処理");
+            jijiHand.onMasterReady();
+        }, 600);
+    }
+};
 
-// --- オブジェクト群 ---
 const jijiHand = {
     cards: [],
     init() {
-        sendMsgFmt("mainMaster", "jijiHand", "依頼", "起動直後処理");
-        setTimeout(() => this.requestCards(), 500);
+        mainMasterObj.executeStartProcess();
     },
-    requestCards() {
+    onMasterReady() {
         sendMsgFmt("workFiles", "jijiHand", "要求起動直後処理", "正解1, 不正解2");
         this.cards = workFilesObj.pick("jiji", 1, 2);
         this.render();
@@ -147,58 +136,54 @@ const jijiHand = {
     },
     render() {
         const view = document.getElementById('jiji-hand-view');
-        view.innerHTML = this.cards.map(c => `<div style="width:30px; height:60px; background:#eee; border:1px solid #fff; border-radius:4px;"></div>`).join('');
-    },
-    playCard() {
-        const target = this.cards.find(c => c.type === "正解") || this.cards[0];
-        if(!target) return;
-        sendMsgFmt("gameStage", "jijiHand", target.type, target.data.word);
-        gameStage.receiveCard(target.data, "jiji");
+        view.innerHTML = this.cards.map(() => `<div style="width:28px; height:57px; background:#eee; border:1px solid #fff; border-radius:3px;"></div>`).join('');
     }
 };
 
 const kaitoHand = {
     cards: [],
-    selectedIdx: -1,
+    selectedIndices: new Set(),
     init() {
         sendMsgFmt("workFiles", "kaitoHand", "要求起動直後処理", "正解1, 不正解2");
         this.cards = workFilesObj.pick("kaito", 1, 2);
         this.render();
+        const icon = document.getElementById('kaito-icon');
+        icon.style.display = "block";
     },
     render() {
         const view = document.getElementById('kaito-hand-view');
         view.innerHTML = "";
         this.cards.forEach((c, i) => {
-            const wrap = document.createElement('div');
-            wrap.className = `card-base ${this.selectedIdx === i ? 'card-is-up' : ''}`;
-            wrap.style.position = "relative";
-            wrap.style.margin = "0 3px";
-            wrap.innerHTML = `<div class="tri-red-top"></div><div class="tri-red-btm"></div><div class="tri-grn-left"></div><div class="tri-grn-right"></div>${c.data.word}`;
-            wrap.onclick = () => this.select(i);
-            view.appendChild(wrap);
+            const card = document.createElement('div');
+            card.className = `card-base ${this.selectedIndices.has(i) ? 'card-is-up' : ''}`;
+            card.innerHTML = `<div class="tri-red-top"></div><div class="tri-red-btm"></div><div class="tri-grn-left"></div><div class="tri-grn-right"></div>${c.data.word}`;
+            card.onclick = () => this.toggleCard(i);
+            view.appendChild(card);
         });
+        this.updateIconFlash();
     },
-    select(idx) {
-        this.selectedIdx = (this.selectedIdx === idx) ? -1 : idx;
+    toggleCard(idx) {
+        if (this.selectedIndices.has(idx)) this.selectedIndices.delete(idx);
+        else this.selectedIndices.add(idx);
         this.render();
-        this.updateIcon();
     },
-    updateIcon() {
+    updateIconFlash() {
         const icon = document.getElementById('kaito-icon');
-        if(this.selectedIdx === -1) { icon.style.display = "none"; return; }
-        icon.style.display = "block";
-        const card = this.cards[this.selectedIdx];
-        icon.className = `icon-circle icon-kaito ${card.type === '正解' ? 'flash-fast' : 'flash-slow'}`;
+        if (this.selectedIndices.size === 0) { icon.className = "icon-circle icon-kaito"; icon.onclick = null; return; }
+        
+        const hasCorrect = Array.from(this.selectedIndices).some(idx => this.cards[idx].type === "正解");
+        icon.className = `icon-circle icon-kaito ${hasCorrect ? 'flash-fast' : 'flash-slow'}`;
         icon.onclick = () => this.fire();
     },
     fire() {
-        const card = this.cards[this.selectedIdx];
-        sendMsgFmt("gameStage", "kaitoHand", card.type, card.data.word);
-        gameStage.receiveCard(card.data, "kaito");
-        this.cards.splice(this.selectedIdx, 1);
-        this.selectedIdx = -1;
+        this.selectedIndices.forEach(idx => {
+            const c = this.cards[idx];
+            sendMsgFmt("gameStage", "kaitoHand", c.type, c.data.word);
+            gameStage.receiveCard(c.data, "kaito");
+        });
+        this.cards = this.cards.filter((_, i) => !this.selectedIndices.has(i));
+        this.selectedIndices.clear();
         this.render();
-        this.updateIcon();
     }
 };
 
@@ -207,64 +192,38 @@ const workFilesObj = {
         let res = [];
         const matches = workFiles.filter(w => w.head === lastPlayedTail);
         const others = workFiles.filter(w => w.head !== lastPlayedTail);
-        
-        // 起動直後特例: じじは1番目、凱士は2番目の正解
-        if(who === "jiji") res.push({type: matches[0]?"正解":"カードなし", data: matches[0] || {word:"なし"}});
+        if (who === "jiji") res.push({type: matches[0]?"正解":"カードなし", data: matches[0] || {word:"なし"}});
         else res.push({type: matches[1]?"正解":"カードなし", data: matches[1] || matches[0] || {word:"なし"}});
-        
         for(let i=0; i<ngNum; i++) {
             const ng = others.pop();
             if(ng) res.push({type:"不正解", data:ng});
         }
         return res;
-    },
-    sync(no) {
-        workFiles = workFiles.filter(w => w.no !== no);
-        workFiles.sort((a,b) => a.tail.localeCompare(b.tail) || a.no - b.no);
-        updateDebug();
-    }
-};
-
-const mainMasterObj = {
-    sync(no) {
-        const item = mainMaster.find(m => m.no === no);
-        if(item) item.flagB = 1;
-        updateDebug();
     }
 };
 
 const gameStage = {
     receiveCard(data, from) {
         const slot = document.getElementById('played-card-slot');
-        slot.innerHTML = createCardHTML(data.word, from === "jiji");
-        slot.style.position = "absolute";
-        slot.style.left = "50%";
-        slot.style.top = "20px";
-        slot.style.transform = "translateX(-50%)";
-        
+        slot.innerHTML = `<div class="card-base ${from === 'jiji' ? 'card-reverse' : ''}"><div class="tri-red-top"></div><div class="tri-red-btm"></div><div class="tri-grn-left"></div><div class="tri-grn-right"></div>${data.word}</div>`;
         lastPlayedTail = data.tail;
         
-        // 同時通知
         sendMsgFmt("workFiles", "gameStage", "処理", `使用済カード No.${data.no}`);
-        workFilesObj.sync(data.no);
+        workFiles = workFiles.filter(w => w.no !== data.no);
+        workFiles.sort((a,b) => a.tail.localeCompare(b.tail) || a.no - b.no);
+        
         sendMsgFmt("mainMaster", "gameStage", "処理", `使用済カード No.${data.no}`);
-        mainMasterObj.sync(data.no);
-
-        if(data.head !== "ん" && data.tail === "ん") {
-            document.getElementById('msg-banner').innerText = "しりとりルールにはんします";
-            document.getElementById('msg-banner').style.display = "block";
-            document.getElementById('deal-btn').style.display = "block";
-        }
+        const m = mainMaster.find(x => x.no === data.no);
+        if(m) m.flagB = 1;
+        updateDebug();
     }
 };
 
-// --- 初期化 ---
 window.onload = () => {
     updateDebug();
     sendMsgFmt("System", "User", "Start", "バレリーナ待機(2s)");
     setTimeout(() => jijiHand.init(), 2000);
 };
-
 </script>
 </body>
 </html>
