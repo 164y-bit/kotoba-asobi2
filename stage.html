@@ -2,210 +2,268 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=375, height=812, initial-scale=1.0">
-    <title>1.60 stage.html - オブジェクト間msgFmt通信と凱士UIの実装</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>1.61 stage.html - msgFmt通信と石碑(mainMaster)同期の実装</title>
     <style>
-        :root {
-            --bg-blue: #a0c4ff;
-            --bg-white: #ffffff;
-            --bg-yellow: #fdffb6;
-            --card-border: #ffd700;
-            --card-red: #ffadad;
-            --card-green: #caffbf;
+        :root { 
+            --g-blue: #4285F4; --g-red: #EA4335; --g-yellow: #FBBC05; --g-green: #34A853; 
+            --j-card-w: 28px; --j-card-h: 57px;
+            --card-w: 105px; --card-h: 215px;
         }
-        body { margin: 0; font-family: sans-serif; overflow: hidden; background: #333; }
-        #stage { width: 375px; height: 812px; position: relative; display: flex; flex-direction: column; background: var(--bg-white); margin: auto; }
+        html, body { 
+            overflow: hidden; height: 100%; position: fixed; width: 100%;
+            background: #202124; margin: 0; display: flex; 
+            justify-content: flex-start; align-items: center; 
+            font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+            padding-left: 20px;
+        }
+        #iphone-frame { 
+            width: 375px; height: 812px;
+            background: #ffffff; position: relative; overflow: hidden;
+            display: flex; flex-direction: column;
+            border-radius: 40px; border: 10px solid transparent;
+            background-image: linear-gradient(#fff, #fff), 
+                              linear-gradient(to bottom right, var(--g-blue), var(--g-red), var(--g-yellow), var(--g-green));
+            background-origin: border-box; background-clip: content-box, border-box;
+            box-sizing: border-box; flex-shrink: 0;
+        }
+        .area-jiji { flex: 200; background: var(--g-blue); position: relative; }
+        .area-mid { flex: 280; background: #fff; position: relative; overflow: hidden; }
+        .area-kaito { flex: 332; background: var(--g-yellow); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; }
         
-        /* 3層構造 */
-        #jiji-area { flex: 1; background: var(--bg-blue); position: relative; }
-        #center-area { height: 300px; background: var(--bg-white); position: relative; border-top: 2px solid #ddd; border-bottom: 2px solid #ddd; }
-        #kaito-area { flex: 1; background: var(--bg-yellow); position: relative; }
-
-        /* カードデザイン (105:215) */
-        .card {
-            width: 70px; height: 143px; /* 375pxに収めるため縮小。比率は維持 */
-            border: 3px solid var(--card-border);
-            position: absolute; border-radius: 8px;
-            background: #fff; transition: all 0.3s; cursor: pointer;
+        /* カードデザイン (赤・緑三角形) */
+        .card-base { 
+            width: var(--card-w); height: var(--card-h); background: white; 
+            border: 2.5px solid #ffd700; border-radius: 12px; 
+            position: absolute; box-sizing: border-box; transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            display: flex; align-items: center; justify-content: center;
+            writing-mode: vertical-rl; text-orientation: upright; font-size: 1.8rem; font-weight: 900;
         }
-        .card-inner { width: 100%; height: 100%; position: relative; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .card-top, .card-bottom { width: 0; height: 0; border-left: 35px solid transparent; border-right: 35px solid transparent; position: absolute; left: 0; }
-        .card-top { border-top: 20px solid var(--card-red); top: 0; }
-        .card-bottom { border-bottom: 20px solid var(--card-red); bottom: 0; }
-        .card-left, .card-right { width: 0; height: 0; border-top: 71px solid transparent; border-bottom: 71px solid transparent; position: absolute; top: 0; }
-        .card-left { border-left: 10px solid var(--card-green); left: 0; }
-        .card-right { border-right: 10px solid var(--card-green); right: 0; }
+        .tri-red-top { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 35px solid transparent; border-right: 35px solid transparent; border-top: 20px solid var(--g-red); }
+        .tri-red-btm { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 35px solid transparent; border-right: 35px solid transparent; border-bottom: 20px solid var(--g-red); }
+        .tri-grn-left { position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 50px solid transparent; border-bottom: 50px solid transparent; border-left: 10px solid var(--g-green); }
+        .tri-grn-right { position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 50px solid transparent; border-bottom: 50px solid transparent; border-right: 10px solid var(--g-green); }
 
-        /* 凱士アイコン */
-        #kaito-icon {
-            width: 60px; height: 60px; border-radius: 50%; background: #ff7043;
-            position: absolute; bottom: 10px; right: 10px; display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 12px; cursor: pointer; display: none;
-        }
-        .flashing-fast { animation: flash 0.3s infinite; }
-        .flashing-slow { animation: flash 1s infinite; }
-        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .card-is-up { transform: translateY(-40px); z-index: 50; }
+        .card-reverse { transform: rotate(180deg); }
 
-        /* メッセージ表示 */
-        #msg-large { position: absolute; top: 100px; width: 100%; text-align: center; font-size: 24px; font-weight: bold; color: red; pointer-events: none; }
-        #msg-debug { position: absolute; top: 0; left: 0; width: 100%; height: 80px; font-size: 10px; background: rgba(0,0,0,0.7); color: #0f0; overflow-y: scroll; pointer-events: none; }
-        #retry-btn { position: absolute; top: 200px; left: 50%; transform: translateX(-50%); padding: 10px 20px; display: none; cursor: pointer; }
+        /* アイコン */
+        .icon-circle { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; background: white; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.2); position: absolute; z-index: 60; }
+        .icon-jiji { left: 50%; transform: translateX(-50%); top: 20px; }
+        .icon-kaito { bottom: 10px; right: 10px; cursor: pointer; display: none; }
+        .flash-fast { animation: flsh 0.3s infinite; }
+        .flash-slow { animation: flsh 1.0s infinite; }
+        @keyframes flsh { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        /* デバッグ・石碑 */
+        #debug-panel { margin-left: 20px; color: #ccc; font-family: monospace; font-size: 11px; background: rgba(0,0,0,0.9); padding: 15px; border-radius: 10px; width: 480px; height: 780px; overflow-y: auto; }
+        .panel-title { color: var(--g-blue); font-weight: bold; border-bottom: 1px solid #444; margin: 10px 0 5px; }
+        table { width: 100%; border-collapse: collapse; font-size: 10px; }
+        th, td { border: 1px solid #333; padding: 2px; text-align: center; }
+        .log-line { color: #0f0; border-bottom: 1px solid #222; padding: 2px 0; }
+        .msg-large { position: absolute; bottom: 10px; width: 100%; text-align: center; color: white; background: var(--g-green); font-weight: 900; font-size: 1.4rem; padding: 8px 0; z-index: 100; display: none;}
+        
+        #deal-btn { position: absolute; right: 15px; bottom: 15px; width: 100px; height: 100px; border-radius: 50%; background: var(--g-red); color: white; border: 4px solid var(--g-yellow); font-weight: bold; cursor: pointer; z-index: 110; display: none; }
     </style>
 </head>
 <body>
 
-<div id="stage">
-    <div id="jiji-area">
-        <div id="msg-debug">--- msgFmt Log ---</div>
-        <div id="jiji-hand-container"></div>
+    <div id="iphone-frame">
+        <div class="area-jiji" id="jiji-area">
+            <div class="icon-circle icon-jiji"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=jiji" width="100%"></div>
+            <div id="jiji-hand-view" style="display:flex; gap:5px; justify-content:center; margin-top:110px;"></div>
+        </div>
+        <div class="area-mid" id="mid-area">
+            <div id="played-card-slot"></div>
+            <div id="msg-banner" class="msg-large"></div>
+            <button id="deal-btn">もう一回</button>
+        </div>
+        <div class="area-kaito" id="kaito-area">
+            <div id="kaito-hand-view" style="display:flex; gap:6px; position:absolute; bottom:110px;"></div>
+            <div id="kaito-icon" class="icon-circle icon-kaito"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=kaito" width="100%"></div>
+        </div>
     </div>
-    <div id="center-area">
-        <div id="msg-large"></div>
-        <div id="game-stage-word"></div>
-        <button id="retry-btn">もう一回</button>
+
+    <div id="debug-panel">
+        <div class="panel-title">mainMaster (石碑)</div>
+        <table id="master-table"><thead><tr><th>A</th><th>B</th><th>No</th><th>頭</th><th>尻</th><th>単語</th></tr></thead><tbody></tbody></table>
+        <div class="panel-title">workFiles (作業用抽出)</div>
+        <table id="work-table"><thead><tr><th>No</th><th>頭</th><th>尻</th><th>単語</th></tr></thead><tbody></tbody></table>
+        <div class="panel-title">msgFmt リアルタイムログ</div>
+        <div id="fmt-log"></div>
     </div>
-    <div id="kaito-area">
-        <div id="kaito-hand-container"></div>
-        <div id="kaito-icon">発射!</div>
-    </div>
-</div>
 
 <script>
-// --- 共通ログ機能 ---
-const Logger = (msg) => {
-    const logArea = document.getElementById('msg-debug');
-    logArea.innerHTML += `<div>${msg}</div>`;
-    logArea.scrollTop = logArea.scrollHeight;
-    console.log(msg);
-};
+// --- コアデータ・石碑 ---
+const wordSource = ["りんご","ごりら","らっぱ","ぱせり","りす","すいか","かめ","めだか","からす","すべりだい","いか","かさ","さかな","なす","すぽーつ","つくえ","えりまき","きつね","ねこ","こあら","らくがき","あひる","るびー","いぬ","ぬいぐるみ","みみ","みず","すなば","はとり"];
+let mainMaster = wordSource.map((w, i) => ({ flagA: 0, flagB: 0, no: i + 1, head: w[0], tail: w.slice(-1), word: w }));
+let workFiles = [...mainMaster];
+let lastPlayedTail = "り";
 
-// --- ① じじ手札 ---
+// --- ログ出力 ---
+function sendMsgFmt(to, from, type, detail) {
+    const log = document.getElementById('fmt-log');
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    line.innerText = `msgFmt: [${to}] from [${from}] - ${type} | ${detail}`;
+    log.prepend(line);
+}
+
+// --- 描画系 ---
+function updateDebug() {
+    const mBody = document.querySelector('#master-table tbody');
+    mBody.innerHTML = mainMaster.slice(0, 8).concat(mainMaster.slice(-8)).map(d => 
+        `<tr><td>${d.flagA}</td><td>${d.flagB}</td><td>${d.no}</td><td>${d.head}</td><td>${d.tail}</td><td>${d.word}</td></tr>`
+    ).join('');
+    
+    const wBody = document.querySelector('#work-table tbody');
+    wBody.innerHTML = workFiles.map(d => 
+        `<tr><td>${d.no}</td><td>${d.head}</td><td>${d.tail}</td><td>${d.word}</td></tr>`
+    ).join('');
+}
+
+function createCardHTML(word, isReverse = false) {
+    return `
+        <div class="card-base ${isReverse ? 'card-reverse' : ''}">
+            <div class="tri-red-top"></div><div class="tri-red-btm"></div>
+            <div class="tri-grn-left"></div><div class="tri-grn-right"></div>
+            ${word}
+        </div>`;
+}
+
+// --- オブジェクト群 ---
 const jijiHand = {
     cards: [],
-    requestInit() {
-        Logger("msgFmt: mainMaster, jijiHand, 依頼, 起動直後処理");
-        mainMaster.setupWorkFiles();
-    },
-    onMasterReady() {
-        Logger("msgFmt: jijiHand, mainMaster, 正常完了, 起動直後処理");
-        this.requestCards();
+    init() {
+        sendMsgFmt("mainMaster", "jijiHand", "依頼", "起動直後処理");
+        setTimeout(() => this.requestCards(), 500);
     },
     requestCards() {
-        Logger("msgFmt: workFiles, jijiHand, 要求起動直後処理, 正解1, 不正解2");
-        workFiles.pickByRequest("jijiHand", 1, 2);
-    },
-    receiveCards(msgList) {
-        this.cards = msgList;
-        Logger(`jijiHand: カード3枚受領。凱士に通知します。`);
-        kaitoHand.onJijiCall();
-    }
-};
-
-// --- ② 凱士手札 ---
-const kaitoHand = {
-    cards: [],
-    selectedIndices: [],
-    onJijiCall() {
-        Logger("msgFmt: kaitoHand, jijiHand, 伝える, 起動直後処理");
-        this.requestCards();
-    },
-    requestCards() {
-        Logger("msgFmt: workFiles, kaitoHand, 要求起動直後処理, 正解1, 不正解2");
-        workFiles.pickByRequest("kaitoHand", 1, 2);
-    },
-    receiveCards(msgList) {
-        this.cards = msgList;
+        sendMsgFmt("workFiles", "jijiHand", "要求起動直後処理", "正解1, 不正解2");
+        this.cards = workFilesObj.pick("jiji", 1, 2);
         this.render();
-        Logger("msgFmt: jijiHand, kaitoHand, 完了, 起動直後処理");
-    },
-    toggleCard(index) {
-        const idx = this.selectedIndices.indexOf(index);
-        if (idx > -1) this.selectedIndices.splice(idx, 1);
-        else this.selectedIndices.push(index);
-        this.render();
-        this.checkStatus();
-    },
-    checkStatus() {
-        const icon = document.getElementById('kaito-icon');
-        icon.style.display = (this.selectedIndices.length === 1) ? 'flex' : 'none';
-        
-        if (this.selectedIndices.length === 1) {
-            const card = this.cards[this.selectedIndices[0]];
-            icon.className = (card.type === "正解") ? 'flashing-fast' : 'flashing-slow';
-        }
-        
-        if (this.selectedIndices.length >= 2) {
-            setTimeout(() => {
-                if (this.selectedIndices.length >= 2) {
-                    document.getElementById('msg-large').innerText = "ヒント: " + gameStage.lastLetter;
-                    setTimeout(() => document.getElementById('msg-large').innerText = "", 2000);
-                }
-            }, 3000);
-        }
+        sendMsgFmt("kaitoHand", "jijiHand", "伝える", "起動直後処理");
+        kaitoHand.init();
     },
     render() {
-        const container = document.getElementById('kaito-hand-container');
-        container.innerHTML = "";
-        this.cards.forEach((c, i) => {
-            const div = document.createElement('div');
-            div.className = 'card';
-            div.style.left = `${20 + i * 110}px`;
-            div.style.top = this.selectedIndices.includes(i) ? "20px" : "60px";
-            div.onclick = () => this.toggleCard(i);
-            div.innerHTML = `<div class="card-inner"><div class="card-top"></div><div class="card-left"></div><div class="card-right"></div><div class="card-bottom"></div>${c.data.単語}</div>`;
-            container.appendChild(div);
-        });
+        const view = document.getElementById('jiji-hand-view');
+        view.innerHTML = this.cards.map(c => `<div style="width:30px; height:60px; background:#eee; border:1px solid #fff; border-radius:4px;"></div>`).join('');
+    },
+    playCard() {
+        const target = this.cards.find(c => c.type === "正解") || this.cards[0];
+        if(!target) return;
+        sendMsgFmt("gameStage", "jijiHand", target.type, target.data.word);
+        gameStage.receiveCard(target.data, "jiji");
     }
 };
 
-// --- ④ 作業ファイル (ダミーデータ抽出) ---
-const workFiles = {
-    data: [
-        {No:1, 頭:"り", 尻:"ん", 単語:"りんご", flagA:1, flagB:0},
-        {No:2, 頭:"ん", 尻:"だ", 単語:"んだ", flagA:0, flagB:0},
-        {No:3, 頭:"ん", 尻:"に", 単語:"んに", flagA:0, flagB:0},
-        {No:4, 頭:"ん", 尻:"ま", 単語:"んま", flagA:0, flagB:0}
-    ],
-    pickByRequest(to, okNum, ngNum) {
-        // じじ指定の特例取り出し
-        let result = [];
-        if (to === "jijiHand") {
-            result.push({type:"正解", data:this.data[0]});
-            result.push({type:"不正解", data:this.data[2]});
-            result.push({type:"不正解", data:this.data[3]});
-        } else {
-            result.push({type:"正解", data:this.data[1]});
-            result.push({type:"不正解", data:this.data[2]});
-            result.push({type:"不正解", data:this.data[3]});
-        }
-        result.forEach(m => Logger(`msgFmt: ${to}, workFiles, ${m.type}, 正解${okNum}, 不正解${ngNum}, ...${m.data.単語}`));
-        if (to === "jijiHand") jijiHand.receiveCards(result);
-        else kaitoHand.receiveCards(result);
-    }
-};
-
-// --- ⑤ マスタファイル ---
-const mainMaster = {
-    setupWorkFiles() {
-        Logger("mainMaster: workFilesを複製・ソート完了");
-        jijiHand.onMasterReady();
-    }
-};
-
-// --- ③ 提示場所 ---
-const gameStage = {
-    lastLetter: "り",
+const kaitoHand = {
+    cards: [],
+    selectedIdx: -1,
     init() {
-        Logger("System: バレリーナ待機中(2s)...");
-        setTimeout(() => {
-            Logger("System: バレリーナ終了。jijiHandへ制御移譲。");
-            jijiHand.requestInit();
-        }, 2000);
+        sendMsgFmt("workFiles", "kaitoHand", "要求起動直後処理", "正解1, 不正解2");
+        this.cards = workFilesObj.pick("kaito", 1, 2);
+        this.render();
+    },
+    render() {
+        const view = document.getElementById('kaito-hand-view');
+        view.innerHTML = "";
+        this.cards.forEach((c, i) => {
+            const wrap = document.createElement('div');
+            wrap.className = `card-base ${this.selectedIdx === i ? 'card-is-up' : ''}`;
+            wrap.style.position = "relative";
+            wrap.style.margin = "0 3px";
+            wrap.innerHTML = `<div class="tri-red-top"></div><div class="tri-red-btm"></div><div class="tri-grn-left"></div><div class="tri-grn-right"></div>${c.data.word}`;
+            wrap.onclick = () => this.select(i);
+            view.appendChild(wrap);
+        });
+    },
+    select(idx) {
+        this.selectedIdx = (this.selectedIdx === idx) ? -1 : idx;
+        this.render();
+        this.updateIcon();
+    },
+    updateIcon() {
+        const icon = document.getElementById('kaito-icon');
+        if(this.selectedIdx === -1) { icon.style.display = "none"; return; }
+        icon.style.display = "block";
+        const card = this.cards[this.selectedIdx];
+        icon.className = `icon-circle icon-kaito ${card.type === '正解' ? 'flash-fast' : 'flash-slow'}`;
+        icon.onclick = () => this.fire();
+    },
+    fire() {
+        const card = this.cards[this.selectedIdx];
+        sendMsgFmt("gameStage", "kaitoHand", card.type, card.data.word);
+        gameStage.receiveCard(card.data, "kaito");
+        this.cards.splice(this.selectedIdx, 1);
+        this.selectedIdx = -1;
+        this.render();
+        this.updateIcon();
     }
 };
 
-// 起動
-gameStage.init();
+const workFilesObj = {
+    pick(who, okNum, ngNum) {
+        let res = [];
+        const matches = workFiles.filter(w => w.head === lastPlayedTail);
+        const others = workFiles.filter(w => w.head !== lastPlayedTail);
+        
+        // 起動直後特例: じじは1番目、凱士は2番目の正解
+        if(who === "jiji") res.push({type: matches[0]?"正解":"カードなし", data: matches[0] || {word:"なし"}});
+        else res.push({type: matches[1]?"正解":"カードなし", data: matches[1] || matches[0] || {word:"なし"}});
+        
+        for(let i=0; i<ngNum; i++) {
+            const ng = others.pop();
+            if(ng) res.push({type:"不正解", data:ng});
+        }
+        return res;
+    },
+    sync(no) {
+        workFiles = workFiles.filter(w => w.no !== no);
+        workFiles.sort((a,b) => a.tail.localeCompare(b.tail) || a.no - b.no);
+        updateDebug();
+    }
+};
+
+const mainMasterObj = {
+    sync(no) {
+        const item = mainMaster.find(m => m.no === no);
+        if(item) item.flagB = 1;
+        updateDebug();
+    }
+};
+
+const gameStage = {
+    receiveCard(data, from) {
+        const slot = document.getElementById('played-card-slot');
+        slot.innerHTML = createCardHTML(data.word, from === "jiji");
+        slot.style.position = "absolute";
+        slot.style.left = "50%";
+        slot.style.top = "20px";
+        slot.style.transform = "translateX(-50%)";
+        
+        lastPlayedTail = data.tail;
+        
+        // 同時通知
+        sendMsgFmt("workFiles", "gameStage", "処理", `使用済カード No.${data.no}`);
+        workFilesObj.sync(data.no);
+        sendMsgFmt("mainMaster", "gameStage", "処理", `使用済カード No.${data.no}`);
+        mainMasterObj.sync(data.no);
+
+        if(data.head !== "ん" && data.tail === "ん") {
+            document.getElementById('msg-banner').innerText = "しりとりルールにはんします";
+            document.getElementById('msg-banner').style.display = "block";
+            document.getElementById('deal-btn').style.display = "block";
+        }
+    }
+};
+
+// --- 初期化 ---
+window.onload = () => {
+    updateDebug();
+    sendMsgFmt("System", "User", "Start", "バレリーナ待機(2s)");
+    setTimeout(() => jijiHand.init(), 2000);
+};
 
 </script>
 </body>
